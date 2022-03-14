@@ -45,17 +45,21 @@ function App() {
     // another
     BABYLON.SceneLoader.ImportMesh("", "/", "tile_1.glb", scene, function (m) {
       m.forEach((mesh) => {
-        mesh.position = new BABYLON.Vector3(1, 0, 0);
+        // THIS IS THE ALMIGHTY FIX THAT SOLVES THE CLIPPING ISSUES
+        if (mesh.material) {
+          mesh.material.needDepthPrePass = true;
+        }
       });
-      console.log(m);
     });
 
-    BABYLON.SceneLoader.ImportMesh("", "/", "tile_1.glb", scene, function (m) {
-      m.forEach((mesh) => {
-        mesh.position = new BABYLON.Vector3(0, 0, 0);
-      });
-      console.log(m);
-    });
+    scene.enableDepthRenderer();
+
+    // BABYLON.SceneLoader.ImportMesh("", "/", "tile_1.glb", scene, function (m) {
+    //   m.forEach((mesh) => {
+    //     mesh.position = new BABYLON.Vector3(0, 0, 0);
+    //   });
+    //   console.log(m);
+    // });
 
     window.addEventListener("resize", function () {
       engine.resize();
