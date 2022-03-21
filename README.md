@@ -9,3 +9,9 @@
 
 1. Run `pnpm dev`
 2. Open `http://localhost:3000`
+
+# Authors
+
+- Tomi Trescak <tomi.trescak@gmail.com>
+- Hasan Karabork <19679091@student.westernsydney.edu.au>
+- Djed Curtis <djedcurtis@protonmail.com>
