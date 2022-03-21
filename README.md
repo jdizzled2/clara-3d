@@ -9,3 +9,7 @@
 
 1. Run `pnpm dev`
 2. Open `http://localhost:3000`
+
+# Authors
+
+- Tomi Trescak <tomi.trescak@gmail.com>
