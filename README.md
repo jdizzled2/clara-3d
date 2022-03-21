@@ -13,3 +13,4 @@
 # Authors
 
 - Tomi Trescak <tomi.trescak@gmail.com>
+- Djed Curtis <djedcurtis@protonmail.com>
