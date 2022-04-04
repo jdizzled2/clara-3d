@@ -1,21 +1,25 @@
 lockfileVersion: 5.3
 
 specifiers:
-  '@babylonjs/core': ^4.2.2
-  '@babylonjs/loaders': ^4.2.2
+  '@babylonjs/core': ^5.0.2
+  '@babylonjs/gui': ^5.0.2
+  '@babylonjs/loaders': ^5.0.0
   '@types/react': ^17.0.33
   '@types/react-dom': ^17.0.10
   '@vitejs/plugin-react': ^1.0.7
   babylonjs: ^4.2.2
+  babylonjs-gui: ^5.0.2
   react: ^17.0.2
   react-dom: ^17.0.2
   typescript: ^4.5.4
   vite: ^2.8.0
 
 dependencies:
-  '@babylonjs/core': 4.2.2
-  '@babylonjs/loaders': 4.2.2
+  '@babylonjs/core': 5.0.2
+  '@babylonjs/gui': 5.0.2
+  '@babylonjs/loaders': 5.0.2
   babylonjs: 4.2.2
+  babylonjs-gui: 5.0.2
   react: 17.0.2
   react-dom: 17.0.2_react@17.0.2
 
@@ -296,17 +300,24 @@ packages:
       to-fast-properties: 2.0.0
     dev: true
 
-  /@babylonjs/core/4.2.2:
-    resolution: {integrity: sha512-gAgetSyoxFZ/xzMVVnGPKaP941NHA59Ho8GGKFW98OTEp8yZcnzJjNOD2zfF1eKmlvR/6WwSmcrKWTJtPF1pyA==}
+  /@babylonjs/core/5.0.2:
+    resolution: {integrity: sha512-8eHXBWmNB+XF9hlcx+KMI0plwNBWzncNtXph+nyiGwDjUQ1CBLWlnatdQOt1a3WDRJ1s6YK8A6ObasxpF8UXlA==}
     dependencies:
       tslib: 2.3.1
     dev: false
 
-  /@babylonjs/loaders/4.2.2:
-    resolution: {integrity: sha512-Qk8r4xp4eOznbX3AsNYv8HgwS+tzGu6TwSpDX4il3g0B+k1N5k6KE5ghrnwDytoxUDVjGZ/VKk2cQqiHsg/NLg==}
+  /@babylonjs/gui/5.0.2:
+    resolution: {integrity: sha512-PSh3CKbWY2oW8JL7Zmgf7rz0+Fq/aIncH4bcBxsd5816zp5tYEsPxpWw5nuI5pIjrvNwU0qIXmhXZ9JP0860OA==}
     dependencies:
-      '@babylonjs/core': 4.2.2
-      babylonjs-gltf2interface: 4.2.2
+      '@babylonjs/core': 5.0.2
+      tslib: 2.3.1
+    dev: false
+
+  /@babylonjs/loaders/5.0.2:
+    resolution: {integrity: sha512-wVTCbywAapY3NUENZJV659nNRQJTUTQCffghAfWVQroY2tafsIf0qwZs6iLwGRier2u6L79PHRHp5YNKYJZwHw==}
+    dependencies:
+      '@babylonjs/core': 5.0.2
+      babylonjs-gltf2interface: 5.0.2
       tslib: 2.3.1
     dev: false
 
@@ -379,12 +390,22 @@ packages:
       color-convert: 1.9.3
     dev: true
 
-  /babylonjs-gltf2interface/4.2.2:
-    resolution: {integrity: sha512-LCQgW1lM+EpKK4yWMiPEgi6ONwJ7W4JrSu3t9JixNRgvnic72OnN2f0bt91rE30EJr1ZaokvkXD/aEiBp/Juyg==}
+  /babylonjs-gltf2interface/5.0.2:
+    resolution: {integrity: sha512-JuBB4U0llRthQI6CF+plWEDGOxfdquOwv9HD0kp3uYXOfIEG5I7Hv++ObKdUhDhQc+kkuee92CJEHniCttAu1w==}
+    dev: false
+
+  /babylonjs-gui/5.0.2:
+    resolution: {integrity: sha512-JD9hCIALGtRlN4Ju8/zM7bybF2zHc7RDxFg2y+ZtTgdvVkV5oZeMFY82/xCJ3TXK5mqhi5EwUqISlU7jnhjwiw==}
+    dependencies:
+      babylonjs: 5.0.2
     dev: false
 
   /babylonjs/4.2.2:
     resolution: {integrity: sha512-p7mTi6+nLuWJTLbwxEJxLOh/QMHMV2KA0bviEoQSK5VtsAq1F0JghoOZYRs4aEqAZF/deFPWvMQk1vbXJ+4eEA==}
+    dev: false
+
+  /babylonjs/5.0.2:
+    resolution: {integrity: sha512-Yk1PxaEom5cp2zsJ/s7Eq0Jnptq2/LDhnwP4N9Ur99M35u/In5GPcaRasLXJdgttm8N60r7Y77vO+dYaLnxc8g==}
     dev: false
 
   /browserslist/4.20.0:
