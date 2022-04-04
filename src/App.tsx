@@ -1,11 +1,10 @@
-import React from 'react';
+import React from "react";
 
-import * as BABYLON from '@babylonjs/core';
-import '@babylonjs/loaders/glTF/2.0/glTFLoader';
+import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
-import './App.css';
-import { scene } from './scenes/scene2';
-import { SceneLoader } from './SceneLoader';
+import "./App.css";
+import { SceneLoader } from "./SceneLoader";
+import { scene } from "./scenes/scene2";
 
 // DOCUMENTATION
 // "scene" contains and array of tile definitions
@@ -19,8 +18,9 @@ function App() {
 
   React.useEffect(() => {
     let sceneLoader = new SceneLoader();
-    sceneLoader.initCanvas(ref.current);
-    sceneLoader.loadScene(scene);
+    sceneLoader.initCanvas(ref.current).then(() => {
+      sceneLoader.loadScene(scene);
+    });
 
     // const canvas = ref.current;
     // const engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine

@@ -7,8 +7,6 @@ specifiers:
   '@types/react': ^17.0.33
   '@types/react-dom': ^17.0.10
   '@vitejs/plugin-react': ^1.0.7
-  babylonjs: ^4.2.2
-  babylonjs-gui: ^5.0.2
   react: ^17.0.2
   react-dom: ^17.0.2
   typescript: ^4.5.4
@@ -18,8 +16,6 @@ dependencies:
   '@babylonjs/core': 5.0.2
   '@babylonjs/gui': 5.0.2
   '@babylonjs/loaders': 5.0.2
-  babylonjs: 4.2.2
-  babylonjs-gui: 5.0.2
   react: 17.0.2
   react-dom: 17.0.2_react@17.0.2
 
@@ -392,20 +388,6 @@ packages:
 
   /babylonjs-gltf2interface/5.0.2:
     resolution: {integrity: sha512-JuBB4U0llRthQI6CF+plWEDGOxfdquOwv9HD0kp3uYXOfIEG5I7Hv++ObKdUhDhQc+kkuee92CJEHniCttAu1w==}
-    dev: false
-
-  /babylonjs-gui/5.0.2:
-    resolution: {integrity: sha512-JD9hCIALGtRlN4Ju8/zM7bybF2zHc7RDxFg2y+ZtTgdvVkV5oZeMFY82/xCJ3TXK5mqhi5EwUqISlU7jnhjwiw==}
-    dependencies:
-      babylonjs: 5.0.2
-    dev: false
-
-  /babylonjs/4.2.2:
-    resolution: {integrity: sha512-p7mTi6+nLuWJTLbwxEJxLOh/QMHMV2KA0bviEoQSK5VtsAq1F0JghoOZYRs4aEqAZF/deFPWvMQk1vbXJ+4eEA==}
-    dev: false
-
-  /babylonjs/5.0.2:
-    resolution: {integrity: sha512-Yk1PxaEom5cp2zsJ/s7Eq0Jnptq2/LDhnwP4N9Ur99M35u/In5GPcaRasLXJdgttm8N60r7Y77vO+dYaLnxc8g==}
     dev: false
 
   /browserslist/4.20.0:
