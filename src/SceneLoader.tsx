@@ -78,6 +78,8 @@ export class SceneLoader {
 
     this.assetsManager = new BABYLON.AssetsManager(scene);
 
+    scene.clearColor = BABYLON.Color3.White() as unknown as BABYLON.Color4;
+
     console.log("Preloading ...");
     await preloadMeshes(this.assetsManager);
     console.log("Loaded");
