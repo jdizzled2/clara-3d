@@ -274,7 +274,7 @@ export class SceneLoader {
     slider.minimum = 0.1;
     slider.maximum = 20;
     slider.value = 5;
-    slider.height = "20px";
+    slider.height = "60px";
     slider.width = "150px";
     slider.color = "#003399";
     slider.background = "grey";
