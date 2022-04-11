@@ -1,11 +1,9 @@
 // imports & includes
-import * as BABYLON from "@babylonjs/core";
-import { int, Scene } from "@babylonjs/core";
-import * as GUI from "@babylonjs/gui";
-import { Slider } from "@babylonjs/gui";
-import "@babylonjs/loaders/glTF/2.0/glTFLoader";
+import * as BABYLON from '@babylonjs/core';
+import * as GUI from '@babylonjs/gui';
+import '@babylonjs/loaders/glTF/2.0/glTFLoader';
 
-import { Atlas, preloadMeshes } from "./MeshLoader";
+import { Atlas, preloadMeshes } from './MeshLoader';
 
 // board details object
 type SceneDefinition = {
@@ -16,12 +14,13 @@ type SceneDefinition = {
 
 // sceneloader class
 export class SceneLoader {
-  scene: BABYLON.Scene;                 // global scene var
-  light: BABYLON.HemisphericLight;      // global light var
+  scene: BABYLON.Scene; // global scene var
+  light: BABYLON.HemisphericLight; // global light var
   assetsManager: BABYLON.AssetsManager; // global assetmanager
-  detailLevel = 3;                      // level of detail variable (NOT WORKING)
-  trees = [];                           // global tree array
+  detailLevel = 3; // level of detail variable (NOT WORKING)
+  trees = []; // global tree array
   claraGlobalGui: GUI.AdvancedDynamicTexture;
+  playerAnimator: BABYLON.AnimationGroup;
 
   // canvas initiation
   async initCanvas(canvas: HTMLCanvasElement) {
@@ -30,7 +29,7 @@ export class SceneLoader {
     // create scene function
     var createScene = () => {
       let scene = new BABYLON.Scene(engine);
-      this.scene = scene; 
+      this.scene = scene;
       scene.clearColor = BABYLON.Color3.White() as unknown as BABYLON.Color4;
 
       // create camera
@@ -48,7 +47,7 @@ export class SceneLoader {
       // camera.upperBetaLimit = Math.PI/3;
       // camera.lowerRadiusLimit = 30;
       // camera.upperRadiusLimit = 30;
-        
+
       // set camera sensitivity
       camera.angularSensibilityX = 5000;
       camera.angularSensibilityY = 5000;
@@ -57,27 +56,31 @@ export class SceneLoader {
       camera.attachControl("canvas", true);
 
       // create gui overlay
-      var claraGUI = GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
+      var claraGUI = GUI.AdvancedDynamicTexture.CreateFullscreenUI(
+        "UI",
+        true,
+        this.scene
+      );
       this.claraGlobalGui = claraGUI;
 
       // create stacks for gui
       var buttonPanel = new GUI.StackPanel();
       var sliderPanel = new GUI.StackPanel();
-                      
+
       // set up stackPanel
       buttonPanel.isVertical = false;
       buttonPanel.height = "50px";
-      buttonPanel.width = "150px"
+      buttonPanel.width = "150px";
       buttonPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
       buttonPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
       claraGUI.addControl(buttonPanel);
-          
+
       // set up sliderPanel
       sliderPanel.width = "220px";
       sliderPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
       sliderPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
       claraGUI.addControl(sliderPanel);
-          
+
       // create camera angle buttons
       //    - cam1 = angle 1 (higher)
       //    - cam2 = angle 2 (lower)
@@ -86,7 +89,7 @@ export class SceneLoader {
       var cam1 = GUI.Button.CreateImageOnlyButton("cam1", "/top.png");
       var cam2 = GUI.Button.CreateImageOnlyButton("cam2", "/side.png");
       var cam3 = GUI.Button.CreateImageOnlyButton("cam3", "/free.png");
-          
+
       // set up cam1 button and handler
       cam1.width = "50px";
       cam1.height = "50px";
@@ -98,19 +101,19 @@ export class SceneLoader {
         camera.upperRadiusLimit = 30;
       });
       buttonPanel.addControl(cam1);
-          
+
       // set up cam2 button and handler
       cam2.width = "50px";
       cam2.height = "50px";
       cam2.color = "transparent";
       cam2.onPointerClickObservable.add(function () {
-        camera.lowerBetaLimit = Math.PI/2;
-        camera.upperBetaLimit = Math.PI/3;
+        camera.lowerBetaLimit = Math.PI / 2;
+        camera.upperBetaLimit = Math.PI / 3;
         camera.lowerRadiusLimit = 30;
         camera.upperRadiusLimit = 30;
       });
       buttonPanel.addControl(cam2);
-          
+
       // set up cam3 button and handler
       cam3.width = "50px";
       cam3.height = "50px";
@@ -122,14 +125,14 @@ export class SceneLoader {
         camera.upperRadiusLimit = 0;
       });
       buttonPanel.addControl(cam3);
-                
+
       // create detail slider heading
       var detailSliderHeading = new GUI.TextBlock();
       detailSliderHeading.text = "Detail Level: High";
       detailSliderHeading.height = "20px";
       detailSliderHeading.color = "black";
       sliderPanel.addControl(detailSliderHeading);
-         
+
       // create and set up detail slider
       var detailSlider = new GUI.Slider();
       detailSlider.minimum = 1;
@@ -145,39 +148,62 @@ export class SceneLoader {
           this.trees[40].dispose();
           // console.log("length of trees array ", this.trees.length);
           // createScene();
-        }
-        else if (value > 1 && value != 3) {
+        } else if (value > 1 && value != 3) {
           detailSlider.value = 2;
           detailSliderHeading.text = "Detail Level: Medium";
           // this.detailLevel = 2;
           // console.log(this.detailLevel);
-        }
-        else if (value == 3) {
+        } else if (value == 3) {
           detailSliderHeading.text = "Detail Level: High";
           // this.detailLevel = 3;
           // console.log(this.detailLevel);
         }
-                  // SWITCH STATEMENT SCRAPPED UNTIL SLIDER CAN LOCK ONTO 2
-                  // switch(value) {
-                  //   case 1: {
-                  //     detailSliderHeading.text = "Detail Level: Low";
-                  //     break;
-                  //   }
-                  //   case 2: {
-                  //     detailSliderHeading.text = "Detail Level: Medium";
-                  //     break;
-                  //   }
-                  //   case 3: {
-                  //     detailSliderHeading.text = "Detail Level: High";
-                  //     break;
-                  //   }
-                  //   default: {
-                  //     break;
-                  //   }
-                  // }
-        });
-        sliderPanel.addControl(detailSlider);
-      
+        // SWITCH STATEMENT SCRAPPED UNTIL SLIDER CAN LOCK ONTO 2
+        // switch(value) {
+        //   case 1: {
+        //     detailSliderHeading.text = "Detail Level: Low";
+        //     break;
+        //   }
+        //   case 2: {
+        //     detailSliderHeading.text = "Detail Level: Medium";
+        //     break;
+        //   }
+        //   case 3: {
+        //     detailSliderHeading.text = "Detail Level: High";
+        //     break;
+        //   }
+        //   default: {
+        //     break;
+        //   }
+        // }
+      });
+      sliderPanel.addControl(detailSlider);
+
+      let idleButton = GUI.Button.CreateSimpleButton("Idle", "Idle");
+      idleButton.width = 0.2;
+      idleButton.height = "40px";
+      idleButton.color = "white";
+      idleButton.background = "green";
+      idleButton.width = "150px";
+      idleButton.onPointerClickObservable.add(() => {
+        this.playerAnimator.stop();
+        this.playerAnimator.start(true, 1, 0, 58);
+      });
+
+      let walkButton = GUI.Button.CreateSimpleButton("Walk", "Walk");
+      walkButton.width = 0.2;
+      walkButton.height = "40px";
+      walkButton.color = "white";
+      walkButton.background = "green";
+      walkButton.width = "150px";
+      walkButton.onPointerClickObservable.add(() => {
+        this.playerAnimator.stop();
+        this.playerAnimator.start(true, 1, 60, 160);
+      });
+
+      sliderPanel.addControl(idleButton);
+      sliderPanel.addControl(walkButton);
+
       /* NEED TO GET SHADOWS WORKING */
       // create light
       let light = new BABYLON.HemisphericLight(
@@ -185,7 +211,7 @@ export class SceneLoader {
         new BABYLON.Vector3(1, 1, 0),
         scene
       );
-      this.light = light; 
+      this.light = light;
 
       // enable depth renderering and return scene
       scene.enableDepthRenderer();
@@ -202,12 +228,12 @@ export class SceneLoader {
     // assign asset manager
     this.assetsManager = new BABYLON.AssetsManager(scene);
 
-    // load meshes 
+    // load meshes
     console.log("Preloading ...");
     await preloadMeshes(this.assetsManager);
     console.log("Loaded");
 
-    // render scene 
+    // render scene
     engine.runRenderLoop(function () {
       scene.render();
     });
@@ -242,12 +268,16 @@ export class SceneLoader {
           // tid == 2, place water
           else if (existingTile.tid == 2) {
             let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-            /* 
+            /*
                if tile on edge, put waterfall
             */
           }
           // existing tile is game object (clara, leaf, ghost), place lighter grass
-          else if ([4,5,6,7,8,9,10,11,12,13,14,15].indexOf(existingTile.tid) > -1) {
+          else if (
+            [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].indexOf(
+              existingTile.tid
+            ) > -1
+          ) {
             let top = Atlas.topTiles.get("GrassTop2.glb").createInstance("top");
             top.position = new BABYLON.Vector3(
               rowIndex * 2.1,
@@ -263,15 +293,34 @@ export class SceneLoader {
                 //   1.5,
                 //   columnIndex * 2.1
                 // );
-                BABYLON.SceneLoader.ImportMesh("", "./", "ClaraHit.glb", this.scene, function (meshes) {
-                  meshes.forEach((mesh) => {
-                    if (mesh.material) {
-                      mesh.material.needDepthPrePass = true;
-                    }
-                  });
-                  let tile = meshes[0];
-                  tile.position = new BABYLON.Vector3(rowIndex * 2.1, 1, columnIndex * 2.1);
-                });
+                let sc = this.scene;
+
+                BABYLON.SceneLoader.ImportMesh(
+                  "",
+                  "./",
+                  "clara.glb",
+                  this.scene,
+                  (meshes, ps, skeletons, ags) => {
+                    meshes.forEach((mesh) => {
+                      if (mesh.material) {
+                        mesh.material.needDepthPrePass = true;
+                      }
+                    });
+                    let tile = meshes[0];
+                    tile.position = new BABYLON.Vector3(
+                      rowIndex * 2.1,
+                      1,
+                      columnIndex * 2.1
+                    );
+
+                    this.playerAnimator = ags[0];
+                    this.playerAnimator.stop();
+
+                    //var skeleton = skeletons[0];
+                    //sc.stopAnimation(skeleton);
+                    //sc.beginAnimation(skeleton, 0, 29, true, 2.0);
+                  }
+                );
                 break;
               }
               case 5: {
@@ -323,7 +372,7 @@ export class SceneLoader {
               }
             }
           }
-        } 
+        }
         // undefined tile == place light grass (path)
         else {
           let top = Atlas.topTiles.get("GrassTop2.glb").createInstance("top");
@@ -345,7 +394,7 @@ export class SceneLoader {
       // detailSliderHeading.height = "20px";
       // detailSliderHeading.color = "black";
       // sliderPanel.addControl(detailSliderHeading);
-         
+
       // // create and set up detail slider
       // var detailSlider = new GUI.Slider();
       // detailSlider.minimum = 1;
@@ -393,23 +442,28 @@ export class SceneLoader {
       //             // }
       //   });
       //   sliderPanel.addControl(detailSlider);
-
     }
-  
+
     /* NEED TO GET BOTTOM OF ISLAND SCALING */ // island is 4.5 tiles x 4.5 tiles
-    BABYLON.SceneLoader.ImportMesh("", "./", "island.glb", this.scene, function (meshes) {
-      meshes.forEach((mesh) => {
-        if (mesh.material) {
-          mesh.material.needDepthPrePass = true;
-        }
-      });
-      let tile = meshes[0];
-      var rowCentre = ((rows * 2.1) - 2.1)/2;
-      var colCentre = ((columns * 2.1) - 2.1)/2;
-      tile.position = new BABYLON.Vector3(rowCentre, 1.5, colCentre);
-      tile.scaling = new BABYLON.Vector3(rows/4.5, 1.8, columns/4.5);
-    });
-    
+    BABYLON.SceneLoader.ImportMesh(
+      "",
+      "./",
+      "island.glb",
+      this.scene,
+      function (meshes) {
+        meshes.forEach((mesh) => {
+          if (mesh.material) {
+            mesh.material.needDepthPrePass = true;
+          }
+        });
+        let tile = meshes[0];
+        var rowCentre = (rows * 2.1 - 2.1) / 2;
+        var colCentre = (columns * 2.1 - 2.1) / 2;
+        tile.position = new BABYLON.Vector3(rowCentre, 1.5, colCentre);
+        tile.scaling = new BABYLON.Vector3(rows / 4.5, 1.8, columns / 4.5);
+      }
+    );
+
     // testing
     console.log("array of trees ", this.trees);
     this.trees[40].dispose();
@@ -428,11 +482,9 @@ export class SceneLoader {
     let treelevel = 3;
     if (treelevel == 1) {
       tree += Math.floor(Math.random() * 7) + 1;
-    }
-    else if (treelevel == 2) {
+    } else if (treelevel == 2) {
       tree += Math.floor(Math.random() * 12) + 1;
-    }
-    else if (treelevel == 3) {
+    } else if (treelevel == 3) {
       tree += Math.floor(Math.random() * 15) + 1;
     }
 
