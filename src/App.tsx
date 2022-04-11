@@ -4,7 +4,7 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
 import "./App.css";
 import { SceneLoader } from "./SceneLoader";
-import { scene } from "./scenes/scene2";
+import { scene } from "./scenes/scene4";
 
 // DOCUMENTATION
 // "scene" contains and array of tile definitions

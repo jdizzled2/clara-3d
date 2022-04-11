@@ -1,30 +1,39 @@
+// imports & includes
 import * as BABYLON from "@babylonjs/core";
+import { int, Scene } from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
+import { Slider } from "@babylonjs/gui";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
 import { Atlas, preloadMeshes } from "./MeshLoader";
 
+// board details object
 type SceneDefinition = {
   rows: number;
   columns: number;
   tiles: Array<{ r: number; c: number; d: number; tid: number }>;
 };
 
+// sceneloader class
 export class SceneLoader {
-  scene: BABYLON.Scene;
-  light: BABYLON.HemisphericLight;
-  assetsManager: BABYLON.AssetsManager;
+  scene: BABYLON.Scene;                 // global scene var
+  light: BABYLON.HemisphericLight;      // global light var
+  assetsManager: BABYLON.AssetsManager; // global assetmanager
+  detailLevel = 3;                      // level of detail variable (NOT WORKING)
+  trees = [];                           // global tree array
+  claraGlobalGui: GUI.AdvancedDynamicTexture;
 
+  // canvas initiation
   async initCanvas(canvas: HTMLCanvasElement) {
     let engine = new BABYLON.Engine(canvas, true);
 
-    let createScene = () => {
+    // create scene function
+    var createScene = () => {
       let scene = new BABYLON.Scene(engine);
-      this.scene = scene;
+      this.scene = scene; 
+      scene.clearColor = BABYLON.Color3.White() as unknown as BABYLON.Color4;
 
-      //this.scene.clearColor = BABYLON.Color3.White();
-      //scene.clearColor = new BABYLON.Color4(0,0,0,0);
-
+      // create camera
       let camera = new BABYLON.ArcRotateCamera(
         "camera",
         0,
@@ -34,316 +43,402 @@ export class SceneLoader {
         scene
       );
 
-      /* NEED TO IMPORT BABYLON/GUI */
-      // if (btn. == pos1 ) some if statement
-      // top camera settings
-      // camera.lowerBetaLimit = BABYLON.Tools.ToRadians(25);
-      // camera.upperBetaLimit = BABYLON.Tools.ToRadians(25);
-      // camera.lowerRadiusLimit = 30;
-      // camera.upperRadiusLimit = 30;
-
-      // mid camera settings limit to only circling around map at set distance
+      // set camera default camera angle (cam2)
       // camera.lowerBetaLimit = Math.PI/2;
       // camera.upperBetaLimit = Math.PI/3;
       // camera.lowerRadiusLimit = 30;
       // camera.upperRadiusLimit = 30;
-
-      // pov camera? maybe
-
-      // camera.angularSensibilityX/Z changes camera sensitivity
-      // higher the value is, slower camera moves
+        
+      // set camera sensitivity
       camera.angularSensibilityX = 5000;
       camera.angularSensibilityY = 5000;
 
       camera.checkCollisions = true;
       camera.attachControl("canvas", true);
 
+      // create gui overlay
+      var claraGUI = GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
+      this.claraGlobalGui = claraGUI;
+
+      // create stacks for gui
+      var buttonPanel = new GUI.StackPanel();
+      var sliderPanel = new GUI.StackPanel();
+                      
+      // set up stackPanel
+      buttonPanel.isVertical = false;
+      buttonPanel.height = "50px";
+      buttonPanel.width = "150px"
+      buttonPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+      buttonPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
+      claraGUI.addControl(buttonPanel);
+          
+      // set up sliderPanel
+      sliderPanel.width = "220px";
+      sliderPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+      sliderPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
+      claraGUI.addControl(sliderPanel);
+          
+      // create camera angle buttons
+      //    - cam1 = angle 1 (higher)
+      //    - cam2 = angle 2 (lower)
+      //    - cam3 = angle 3 (limited-free range) - NEEDS TO BE IMPLEMENTED
+      // NEED BUTTON ICONS
+      var cam1 = GUI.Button.CreateImageOnlyButton("cam1", "/top.png");
+      var cam2 = GUI.Button.CreateImageOnlyButton("cam2", "/side.png");
+      var cam3 = GUI.Button.CreateImageOnlyButton("cam3", "/free.png");
+          
+      // set up cam1 button and handler
+      cam1.width = "50px";
+      cam1.height = "50px";
+      cam1.color = "transparent";
+      cam1.onPointerClickObservable.add(function () {
+        camera.lowerBetaLimit = BABYLON.Tools.ToRadians(25);
+        camera.upperBetaLimit = BABYLON.Tools.ToRadians(25);
+        camera.lowerRadiusLimit = 30;
+        camera.upperRadiusLimit = 30;
+      });
+      buttonPanel.addControl(cam1);
+          
+      // set up cam2 button and handler
+      cam2.width = "50px";
+      cam2.height = "50px";
+      cam2.color = "transparent";
+      cam2.onPointerClickObservable.add(function () {
+        camera.lowerBetaLimit = Math.PI/2;
+        camera.upperBetaLimit = Math.PI/3;
+        camera.lowerRadiusLimit = 30;
+        camera.upperRadiusLimit = 30;
+      });
+      buttonPanel.addControl(cam2);
+          
+      // set up cam3 button and handler
+      cam3.width = "50px";
+      cam3.height = "50px";
+      cam3.color = "transparent";
+      cam3.onPointerClickObservable.add(function () {
+        camera.lowerBetaLimit = 0;
+        camera.upperBetaLimit = 0;
+        camera.lowerRadiusLimit = 0;
+        camera.upperRadiusLimit = 0;
+      });
+      buttonPanel.addControl(cam3);
+                
+      // create detail slider heading
+      var detailSliderHeading = new GUI.TextBlock();
+      detailSliderHeading.text = "Detail Level: High";
+      detailSliderHeading.height = "20px";
+      detailSliderHeading.color = "black";
+      sliderPanel.addControl(detailSliderHeading);
+         
+      // create and set up detail slider
+      var detailSlider = new GUI.Slider();
+      detailSlider.minimum = 1;
+      detailSlider.maximum = 3;
+      detailSlider.value = 3;
+      detailSlider.height = "20px";
+      detailSlider.width = "200px";
+      detailSlider.onValueChangedObservable.add(function (value) {
+        if (value == 1) {
+          detailSliderHeading.text = "Detail Level: Low";
+          this.detailLevel = 1;
+          console.log(this.detailLevel);
+          this.trees[40].dispose();
+          // console.log("length of trees array ", this.trees.length);
+          // createScene();
+        }
+        else if (value > 1 && value != 3) {
+          detailSlider.value = 2;
+          detailSliderHeading.text = "Detail Level: Medium";
+          // this.detailLevel = 2;
+          // console.log(this.detailLevel);
+        }
+        else if (value == 3) {
+          detailSliderHeading.text = "Detail Level: High";
+          // this.detailLevel = 3;
+          // console.log(this.detailLevel);
+        }
+                  // SWITCH STATEMENT SCRAPPED UNTIL SLIDER CAN LOCK ONTO 2
+                  // switch(value) {
+                  //   case 1: {
+                  //     detailSliderHeading.text = "Detail Level: Low";
+                  //     break;
+                  //   }
+                  //   case 2: {
+                  //     detailSliderHeading.text = "Detail Level: Medium";
+                  //     break;
+                  //   }
+                  //   case 3: {
+                  //     detailSliderHeading.text = "Detail Level: High";
+                  //     break;
+                  //   }
+                  //   default: {
+                  //     break;
+                  //   }
+                  // }
+        });
+        sliderPanel.addControl(detailSlider);
+      
       /* NEED TO GET SHADOWS WORKING */
+      // create light
       let light = new BABYLON.HemisphericLight(
         "light",
         new BABYLON.Vector3(1, 1, 0),
         scene
       );
-      this.light = light;
+      this.light = light; 
 
+      // enable depth renderering and return scene
       scene.enableDepthRenderer();
       return scene;
     };
 
+    // screen resizing
     window.addEventListener("resize", function () {
       engine.resize();
     });
 
+    // create scene
     var scene = createScene();
-
+    // assign asset manager
     this.assetsManager = new BABYLON.AssetsManager(scene);
 
-    scene.clearColor = BABYLON.Color3.White() as unknown as BABYLON.Color4;
-
+    // load meshes 
     console.log("Preloading ...");
     await preloadMeshes(this.assetsManager);
     console.log("Loaded");
 
+    // render scene 
     engine.runRenderLoop(function () {
       scene.render();
     });
   }
 
+  // load scene function
   loadScene(definition: SceneDefinition) {
+    // assign rows n cols
     let { rows, columns } = definition;
 
+    // create board loop
     for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
       for (let columnIndex = 0; columnIndex < columns; columnIndex++) {
-        // find if current tile exists
+        // find current tile
         let existingTile = definition.tiles.find(
           (t) => t.c === columnIndex && t.r === rowIndex
         );
 
-        // if current tile exists, place lighter grass
+        // if current tile exists check specifications
+        // else place light grass
         if (existingTile) {
-          // if existing tile is tree, place darker grass
+          // tid == 1, place dark grass + tree
           if (existingTile.tid == 1) {
-            // let mesh = Atlas.grass.get("GrassTop1.glb").createInstance("");
-            // mesh.position = new BABYLON.Vector3(
-            //   rowIndex * 2.1,
-            //   0,
-            //   columnIndex * 2.1
-            // );
-            // BABYLON.SceneLoader.ImportMesh(
-            //   "",
-            //   "./",
-            //   "GrassTop1.glb",
-            //   this.scene,
-            //   function (meshes) {
-            //     meshes.forEach((mesh) => {
-            //       if (mesh.material) {
-            //         mesh.material.needDepthPrePass = true;
-            //       }
-            //     });
-            //     let tile = meshes[0];
-            //     tile.position = new BABYLON.Vector3(
-            //       rowIndex * 2.1,
-            //       0,
-            //       columnIndex * 2.1
-            //     );
-            //   }
-            // );
-            let top = Atlas.grass.get("GrassTop1.glb").createInstance("top");
+            let top = Atlas.topTiles.get("GrassTop1.glb").createInstance("top");
             top.position = new BABYLON.Vector3(
               rowIndex * 2.1,
               0,
               columnIndex * 2.1
             );
+            this.getTree(rowIndex * 2.1, columnIndex * 2.1);
           }
-          // if existing tile is water, place water tile
+          // tid == 2, place water
           else if (existingTile.tid == 2) {
-            // need to get water block
-            // if water tile on edge of map, place waterfall
+            let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+            /* 
+               if tile on edge, put waterfall
+            */
           }
           // existing tile is game object (clara, leaf, ghost), place lighter grass
-          else if (
-            existingTile.tid == 4 ||
-            existingTile.tid == 5 ||
-            existingTile.tid == 6 ||
-            existingTile.tid == 7 ||
-            existingTile.tid == 8 ||
-            existingTile.tid == 9 ||
-            existingTile.tid == 10 ||
-            existingTile.tid == 11 ||
-            existingTile.tid == 12 ||
-            existingTile.tid == 13 ||
-            existingTile.tid == 14 ||
-            existingTile.tid == 15
-          ) {
-            let top = Atlas.grass.get("GrassTop2.glb").createInstance("top");
+          else if ([4,5,6,7,8,9,10,11,12,13,14,15].indexOf(existingTile.tid) > -1) {
+            let top = Atlas.topTiles.get("GrassTop2.glb").createInstance("top");
             top.position = new BABYLON.Vector3(
               rowIndex * 2.1,
               0,
               columnIndex * 2.1
             );
+            switch (existingTile.tid) {
+              case 4: {
+                /* PLACE HOLDER BOX */
+                // var box = BABYLON.Mesh.CreateBox("Box", 1.0, this.scene);
+                // box.position = new BABYLON.Vector3(
+                //   rowIndex * 2.1,
+                //   1.5,
+                //   columnIndex * 2.1
+                // );
+                BABYLON.SceneLoader.ImportMesh("", "./", "ClaraHit.glb", this.scene, function (meshes) {
+                  meshes.forEach((mesh) => {
+                    if (mesh.material) {
+                      mesh.material.needDepthPrePass = true;
+                    }
+                  });
+                  let tile = meshes[0];
+                  tile.position = new BABYLON.Vector3(rowIndex * 2.1, 1, columnIndex * 2.1);
+                });
+                break;
+              }
+              case 5: {
+                // leaf
+                break;
+              }
+              case 6: {
+                // mushroom
+                break;
+              }
+              case 7: {
+                // ghost
+                break;
+              }
+              case 8: {
+                // ghostWall
+                break;
+              }
+              case 9: {
+                // ghostHealer
+                break;
+              }
+              case 10: {
+                // home
+                break;
+              }
+              case 11: {
+                // dot
+                break;
+              }
+              case 12: {
+                // earth
+                break;
+              }
+              case 13: {
+                // gold
+                break;
+              }
+              case 14: {
+                // brokenGold
+                break;
+              }
+              case 15: {
+                // pheromone
+                break;
+              }
+              default: {
+                break;
+              }
+            }
           }
-        } else {
-          let top = Atlas.grass.get("GrassTop2.glb").createInstance("top");
+        } 
+        // undefined tile == place light grass (path)
+        else {
+          let top = Atlas.topTiles.get("GrassTop2.glb").createInstance("top");
           top.position = new BABYLON.Vector3(
             rowIndex * 2.1,
             0,
             columnIndex * 2.1
           );
         }
-
-        if (existingTile) {
-          if (existingTile.tid == 1) {
-            this.getTree(rowIndex * 2.1, columnIndex * 2.1);
-            // BABYLON.SceneLoader.ImportMesh("", "./", "Tree7.glb", this.scene, function (meshes) {
-            //   meshes.forEach((mesh) => {
-            //     if (mesh.material) {
-            //       mesh.material.needDepthPrePass = true;
-            //     }
-            //     // attempt at shadow generation, it did not work
-            //     // var shadowGenerator = new BABYLON.ShadowGenerator(1024, this.light);
-            //     // shadowGenerator.usePoissonSampling = true;
-
-            //     // for (var i = 0; i < meshes.length; i++) {
-            //     //   meshes[i].receiveShadows = true;
-            //     //   //meshes[i].material = myMaterial;
-            //     //   shadowGenerator.addShadowCaster(meshes[i], true);
-            //     // }
-            //   });
-            //   let tile = meshes[0];
-            //   tile.position = new BABYLON.Vector3(
-            //     rowIndex *2.1,
-            //     1.6,
-            //     columnIndex * 2.1
-            //   );
-            // });
-            // BABYLON.SceneLoader.ImportMesh("", "./", "GrassTop1.glb", this.scene, function (meshes) {
-            //   meshes.forEach((mesh) => {
-            //     if (mesh.material) {
-            //       mesh.material.needDepthPrePass = true;
-            //     }
-            //   });
-            //   let tile = meshes[0];
-            //   tile.position = new BABYLON.Vector3(rowIndex*2.1, 0, columnIndex*2.1);
-            // });
-          } else if (existingTile.tid == 4) {
-            var box = BABYLON.Mesh.CreateBox("Box", 1.0, this.scene);
-            box.position = new BABYLON.Vector3(
-              rowIndex * 2.1,
-              1.5,
-              columnIndex * 2.1
-            );
-          }
-        } //else {
-        //   BABYLON.SceneLoader.ImportMesh(
-        //     "",
-        //     "./",
-        //     "GrassTop2.glb",
-        //     this.scene,
-        //     function (meshes) {
-        //       meshes.forEach((mesh) => {
-        //         if (mesh.material) {
-        //           mesh.material.needDepthPrePass = true;
-        //         }
-        //       });
-        //       let tile = meshes[0];
-        //       tile.position = new BABYLON.Vector3(
-        //         rowIndex * 2.1,
-        //         0,
-        //         columnIndex * 2.1
-        //       );
-        //     }
-        //   );
-        // }
       }
+
+      // TESTING OUT-OF-SCOPE ISSUE
+      // var sliderPanel = new GUI.StackPanel();
+      // this.claraGlobalGui.addControl(sliderPanel);
+
+      // // create detail slider heading
+      // var detailSliderHeading = new GUI.TextBlock();
+      // detailSliderHeading.text = "Detail Level: High";
+      // detailSliderHeading.height = "20px";
+      // detailSliderHeading.color = "black";
+      // sliderPanel.addControl(detailSliderHeading);
+         
+      // // create and set up detail slider
+      // var detailSlider = new GUI.Slider();
+      // detailSlider.minimum = 1;
+      // detailSlider.maximum = 3;
+      // detailSlider.value = 3;
+      // detailSlider.height = "20px";
+      // detailSlider.width = "200px";
+      // detailSlider.onValueChangedObservable.add(function (value) {
+      //   if (value == 1) {
+      //     detailSliderHeading.text = "Detail Level: Low";
+      //     this.detailLevel = 1;
+      //     console.log(this.detailLevel);
+      //     this.trees[40].dispose();
+      //     // console.log("length of trees array ", this.trees.length);
+      //     // createScene();
+      //   }
+      //   else if (value > 1 && value != 3) {
+      //     detailSlider.value = 2;
+      //     detailSliderHeading.text = "Detail Level: Medium";
+      //     // this.detailLevel = 2;
+      //     // console.log(this.detailLevel);
+      //   }
+      //   else if (value == 3) {
+      //     detailSliderHeading.text = "Detail Level: High";
+      //     // this.detailLevel = 3;
+      //     // console.log(this.detailLevel);
+      //   }
+      //             // SWITCH STATEMENT SCRAPPED UNTIL SLIDER CAN LOCK ONTO 2
+      //             // switch(value) {
+      //             //   case 1: {
+      //             //     detailSliderHeading.text = "Detail Level: Low";
+      //             //     break;
+      //             //   }
+      //             //   case 2: {
+      //             //     detailSliderHeading.text = "Detail Level: Medium";
+      //             //     break;
+      //             //   }
+      //             //   case 3: {
+      //             //     detailSliderHeading.text = "Detail Level: High";
+      //             //     break;
+      //             //   }
+      //             //   default: {
+      //             //     break;
+      //             //   }
+      //             // }
+      //   });
+      //   sliderPanel.addControl(detailSlider);
+
     }
+  
     /* NEED TO GET BOTTOM OF ISLAND SCALING */ // island is 4.5 tiles x 4.5 tiles
-    //let island = null;
-    // let tile = Atlas.islands.get("Island.glb").createInstance("island");
-    // tile.position = new BABYLON.Vector3(rows, 1.1, columns);
-    // tile.scaling = new BABYLON.Vector3(2, 5, 2);
-
-    BABYLON.SceneLoader.ImportMesh(
-      "",
-      "./",
-      "island.glb",
-      this.scene,
-      function (meshes) {
-        //island = meshes[0];
-        meshes.forEach((mesh) => {
-          // mesh.scaling = new BABYLON.Vector3(rows/5, 0, columns/5);
-          if (mesh.material) {
-            mesh.material.needDepthPrePass = true;
-          }
-          // mesh.scaling = new BABYLON.Vector3(rows/5, 5, columns/5);
-          //mesh.position = new BABYLON.Vector3(rows,1.1, columns);
-        });
-        let tile = meshes[0];
-        //console.log(meshes);
-        //meshes[0].scaling = new BABYLON.Vector3(1, 0, 1);
-        tile.position = new BABYLON.Vector3(rows, 1.1, columns);
-        tile.scaling = new BABYLON.Vector3(2, 5, 2);
-        // tile.position = new BABYLON.Vector3(rows, 1.1, columns);
-      }
-    );
-
-    var advancedTexture = GUI.AdvancedDynamicTexture.CreateFullscreenUI(
-      "UI",
-      true,
-      this.scene
-    );
-
-    var slider = new GUI.Slider();
-    slider.minimum = 0.1;
-    slider.maximum = 20;
-    slider.value = 5;
-    slider.height = "60px";
-    slider.width = "150px";
-    slider.color = "#003399";
-    slider.background = "grey";
-    slider.left = "120px";
-    slider.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-    slider.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-    slider.onValueChangedObservable.add(function (value) {
-      // sphere.scaling = unitVec.scale(value);
-      console.log(value);
+    BABYLON.SceneLoader.ImportMesh("", "./", "island.glb", this.scene, function (meshes) {
+      meshes.forEach((mesh) => {
+        if (mesh.material) {
+          mesh.material.needDepthPrePass = true;
+        }
+      });
+      let tile = meshes[0];
+      var rowCentre = ((rows * 2.1) - 2.1)/2;
+      var colCentre = ((columns * 2.1) - 2.1)/2;
+      tile.position = new BABYLON.Vector3(rowCentre, 1.5, colCentre);
+      tile.scaling = new BABYLON.Vector3(rows/4.5, 1.8, columns/4.5);
     });
-
-    advancedTexture.addControl(slider);
-    //console.log(island);
-    // this.scene.getMeshByName('Plane1_primitive0').scaling.x = rows/5;
-    // this.scene.getMeshByName('Plane1_primitive0').scaling.y = 0;
-    // this.scene.getMeshByName('Plane1_primitive0').scaling.z = columns/5;
-
-    // for (let i = 0; Math.ceil((rows+columns)/4.5); i++) {
-    //     BABYLON.SceneLoader.ImportMesh("", "./", "island.glb", this.scene, function (meshes) {
-    //       meshes.forEach((mesh) => {
-    //         if (mesh.material) {
-    //           mesh.material.needDepthPrePass = true;
-    //         }
-    //       });
-    //       let tile = meshes[0];
-    //       tile.position = new BABYLON.Vector3(i*4.5, 1.1, i*4.5);
-    //     });
-    // }
-    // for (let i = 0; i < rows+columns; i++) {
-    //   BABYLON.SceneLoader.ImportMesh("", "./", "island.glb", this.scene, function (meshes) {
-    //     meshes.forEach((mesh) => {
-    //       if (mesh.material) {
-    //         mesh.material.needDepthPrePass = true;
-    //       }
-    //     });
-    //     let tile = meshes[0];
-    //     tile.position = new BABYLON.Vector3(i, 1.1, i);
-    //   });
-    // }
+    
+    // testing
+    console.log("array of trees ", this.trees);
+    this.trees[40].dispose();
+    console.log("length of trees array ", this.trees.length);
   }
 
   // function to generate random tree
-  // may want to add priority to smaller trees
-  // need to add scaling for lower end systems
+  // tree preferences:
+  //    - Group 1: Tree1 - Tree7 (<50kb)
+  //    - Group 2: Tree1 - Tree12 (<80kb)
+  //    - Group 3: Tree1 - Tree15 (<200kb)
   getTree(xcoord, zoord) {
     let tree = "Tree";
-    tree += Math.floor(Math.random() * 10) + 1;
+    ///tree += Math.floor(Math.random() * 15) + 1;
+
+    let treelevel = 3;
+    if (treelevel == 1) {
+      tree += Math.floor(Math.random() * 7) + 1;
+    }
+    else if (treelevel == 2) {
+      tree += Math.floor(Math.random() * 12) + 1;
+    }
+    else if (treelevel == 3) {
+      tree += Math.floor(Math.random() * 15) + 1;
+    }
 
     let mesh = Atlas.trees.get(tree + ".glb").createInstance("");
     mesh.position = new BABYLON.Vector3(xcoord, 1.6, zoord);
     mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-
-    // BABYLON.SceneLoader.ImportMesh(
-    //   "",
-    //   "./",
-    //   tree + ".glb",
-    //   this.scene,
-    //   function (meshes) {
-    //     meshes.forEach((mesh) => {
-    //       if (mesh.material) {
-    //         mesh.material.needDepthPrePass = true;
-    //       }
-    //     });
-    //     let tile = meshes[0];
-    //     tile.position = new BABYLON.Vector3(xcoord, 1.6, zoord);
-    //     tile.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-    //   }
-    // );
+    this.trees.push(mesh);
   }
 }
