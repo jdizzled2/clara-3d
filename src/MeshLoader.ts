@@ -7,6 +7,7 @@ export const Atlas = {
   grass: new Map<string, BABYLON.Mesh>(),
   tallGrass: new Map<string, BABYLON.Mesh>(),
   stones: new Map<string, BABYLON.Mesh>(),
+  mushrooms: new Map<string, BABYLON.Mesh>(),
   players: new Map<string, BABYLON.Mesh>(),
   leaves: new Map<string, BABYLON.Mesh>(),
   towers: new Map<string, BABYLON.Mesh>(),
@@ -56,12 +57,21 @@ let tiles: { [index: string]: string[] } = {
     "Stones1.glb",
     "Stones2.glb",
   ],
+  mushrooms: [
+    "Mushrooms1.glb",
+    "Mushrooms2.glb",
+    "Mushrooms3.glb",
+    "Mushrooms4.glb",
+  ],
   players: [],
   leaves: [],
   towers: [
     "Tower1.glb",
     "Tower2.glb",
     "Tower3.glb",
+  ],
+  claras: [
+    "clara.glb",
   ],
 };
 
