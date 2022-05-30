@@ -3,6 +3,11 @@ import * as BABYLON from "@babylonjs/core";
 export const Atlas = {
   topTiles: new Map<string, BABYLON.Mesh>(),
   trees: new Map<string, BABYLON.Mesh>(),
+  spaceRocks: new Map<string, BABYLON.Mesh>(), //NEWW !!!!!!!
+
+
+  NFOS: new Map<string, BABYLON.Mesh>(),
+
   grass: new Map<string, BABYLON.Mesh>(),
   tallGrass: new Map<string, BABYLON.Mesh>(),
   stones: new Map<string, BABYLON.Mesh>(),
@@ -36,6 +41,15 @@ let tiles: { [index: string]: string[] } = {
     "Tree14.glb",
     "Tree15.glb",
   ],
+
+  NFOS: [
+    "GrassSet1.glb",
+    "GrassSet2.glb",
+    "GrassSet3.glb",
+    "GrassSet4.glb",
+    "GrassSet5.glb",
+  ],
+
   grass: [
     "GrassSet1.glb",
     "GrassSet2.glb",

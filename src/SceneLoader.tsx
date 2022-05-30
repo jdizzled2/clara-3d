@@ -1,5 +1,6 @@
 // imports & includes
 import * as BABYLON from '@babylonjs/core';
+import { highlightsPixelShader } from '@babylonjs/core/Shaders/highlights.fragment';
 import * as GUI from '@babylonjs/gui';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader';
 
@@ -24,6 +25,7 @@ export class SceneLoader {
   assetsManager: BABYLON.AssetsManager; // global assetmanager
   detailLevel: number;                  // level of detail variable
   glbDef: SceneDefinition;              // global scene definition
+  housePlaced = false;                 // check for house placement
 
   // clara variables
   playerAnimator: BABYLON.AnimationGroup; // clara animation
@@ -40,15 +42,22 @@ export class SceneLoader {
   leavesCollected: number;          // leaf count
   alive = true;                     // alive check
 
-  // speed settings and variables
-  deathSpeed = [400, 800, 1600, 100];     
-  turnSpeed = [150, 300, 600, 50];
-  framesSpeed = [120, 60, 30, 480];
-  moveWaitSpeed = [550, 1100, 2200, 200];
+  // speed settings and variables (CHANGED)
+  // 0 = half speed
+  // 1 = normal speed
+  // 2 = double speed
+  // 3 = triple speed
+  deathSpeed = [1600, 800, 400, 100];     
+  turnSpeed = [600, 300, 150, 50];
+  framesSpeed = [30, 60, 120, 480];
+  moveWaitSpeed = [2200, 1100, 550, 200];
   currentDeathSpeed: number;
   currentTurnSpeed: number;
   currentFrameSpeed: number;
   currentMoveWaitSpeed: number;
+
+  treeArray = [];
+  houseArray = [];
 
   // canvas initiation
   async initCanvas(canvas: HTMLCanvasElement) {
@@ -180,12 +189,11 @@ export class SceneLoader {
       // create and setup speed settings stack
       var speedPanel = new GUI.StackPanel();
       speedPanel.isVertical = false;
-      speedPanel.width = "220px";
-      speedPanel.height = "70px";
-      speedPanel.paddingLeft = "10px"
+      speedPanel.width = "200px";
+      speedPanel.height = "50px";
       speedPanel.paddingTop = "10px"
-      speedPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-      speedPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+      speedPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+      speedPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
       
       // add stacks to gui
       claraGUI.addControl(cameraPanel);
@@ -346,84 +354,55 @@ export class SceneLoader {
       optionsPanel.addControl(higherDetailBtn);
       optionsPanel.addControl(reloadBtn);
 
-      // create and setup double speed button
-      let doubleSpeedButton = GUI.Button.CreateSimpleButton("DoubleSpeed", "DoubleSpeed");
-      doubleSpeedButton.width = 0.2;
-      doubleSpeedButton.height = "40px";
-      doubleSpeedButton.color = "white";
-      doubleSpeedButton.background = "green";
-      doubleSpeedButton.width = "150px";
-      doubleSpeedButton.onPointerClickObservable.add(async () => {
-        //increase speed of scene, currently 3 settings, just use first array value of each required section
-        let x = 0;
-        console.log("death speed before:" + this.currentDeathSpeed);
-        this.currentDeathSpeed = this.deathSpeed[x];
-        console.log("death speed now:" + this.currentDeathSpeed);
-
-        this.currentTurnSpeed = this.turnSpeed[x];
-        this.currentFrameSpeed = this.framesSpeed[x];
-        this.currentMoveWaitSpeed = this.moveWaitSpeed[x];
-      });
-      
       // create and setup half speed button
-      let halfSpeedButton = GUI.Button.CreateSimpleButton("NormalSpeed", "NormalSpeed");
-      halfSpeedButton.width = 0.2;
-      halfSpeedButton.height = "40px";
-      halfSpeedButton.color = "white";
-      halfSpeedButton.background = "green";
-      halfSpeedButton.width = "150px";
-      halfSpeedButton.onPointerClickObservable.add(async () => {
-        //increase speed of scene, currently 3 settings, just use first array value of each required section
-        let x = 1;
-        console.log("death speed before:" + this.currentDeathSpeed);
-        this.currentDeathSpeed = this.deathSpeed[x];
-        console.log("death speed now:" + this.currentDeathSpeed);
-        this.currentTurnSpeed = this.turnSpeed[x];
-        this.currentFrameSpeed = this.framesSpeed[x];
-        this.currentMoveWaitSpeed = this.moveWaitSpeed[x];
+      let halfSpeedBtn = GUI.Button.CreateImageOnlyButton("half", "/icons/halfSpeed.png");
+      halfSpeedBtn.width = "50px";
+      halfSpeedBtn.height = "50px";
+      halfSpeedBtn.onPointerClickObservable.add(async () => {
+        this.currentDeathSpeed = this.deathSpeed[0];
+        this.currentTurnSpeed = this.turnSpeed[0];
+        this.currentFrameSpeed = this.framesSpeed[0];
+        this.currentMoveWaitSpeed = this.moveWaitSpeed[0];
       });
-     
+
       // create and setup normal speed button
-      let normalSpeedButton = GUI.Button.CreateSimpleButton("HalfSpeed", "HalfSpeed");
-      normalSpeedButton.width = 0.2;
-      normalSpeedButton.height = "40px";
-      normalSpeedButton.color = "white";
-      normalSpeedButton.background = "green";
-      normalSpeedButton.width = "150px";
-      normalSpeedButton.onPointerClickObservable.add(async () => {
-        //increase speed of scene, currently 3 settings, just use first array value of each required section
-        let x = 2;
-        console.log("death speed before:" + this.currentDeathSpeed);
-        this.currentDeathSpeed = this.deathSpeed[x];
-        console.log("death speed now:" + this.currentDeathSpeed);
-        this.currentTurnSpeed = this.turnSpeed[x];
-        this.currentFrameSpeed = this.framesSpeed[x];
-        this.currentMoveWaitSpeed = this.moveWaitSpeed[x];
+      let defaultSpeedBtn = GUI.Button.CreateImageOnlyButton("default", "/icons/defaultSpeed.png");
+      defaultSpeedBtn.width = "50px";
+      defaultSpeedBtn.height = "50px";
+      defaultSpeedBtn.onPointerClickObservable.add(async () => {
+        this.currentDeathSpeed = this.deathSpeed[1];
+        this.currentTurnSpeed = this.turnSpeed[1];
+        this.currentFrameSpeed = this.framesSpeed[1];
+        this.currentMoveWaitSpeed = this.moveWaitSpeed[1];
       });
-      
-      // create and setup super fast speed button
-      let bigSpeedButton = GUI.Button.CreateSimpleButton("BigSpeed", "BigSpeed");
-      bigSpeedButton.width = 0.2;
-      bigSpeedButton.height = "40px";
-      bigSpeedButton.color = "white";
-      bigSpeedButton.background = "green";
-      bigSpeedButton.width = "150px";
-      bigSpeedButton.onPointerClickObservable.add(async () => {
-        //increase speed of scene, currently 3 settings, just use first array value of each required section
-        let x = 3;
-        console.log("death speed before:" + this.currentDeathSpeed);
-        this.currentDeathSpeed = this.deathSpeed[x];
-        console.log("death speed now:" + this.currentDeathSpeed);
-        this.currentTurnSpeed = this.turnSpeed[x];
-        this.currentFrameSpeed = this.framesSpeed[x];
-        this.currentMoveWaitSpeed = this.moveWaitSpeed[x];
+
+      // create and setup double speed button
+      let doubleSpeedBtn = GUI.Button.CreateImageOnlyButton("double", "/icons/doubleSpeed.png");
+      doubleSpeedBtn.width = "50px";
+      doubleSpeedBtn.height = "50px";
+      doubleSpeedBtn.onPointerClickObservable.add(async () => {
+        this.currentDeathSpeed = this.deathSpeed[2];
+        this.currentTurnSpeed = this.turnSpeed[2];
+        this.currentFrameSpeed = this.framesSpeed[2];
+        this.currentMoveWaitSpeed = this.moveWaitSpeed[2];
+      });
+
+      // create and setup triple speed button
+      let tripleSpeedBtn = GUI.Button.CreateImageOnlyButton("triple", "/icons/tripleSpeed.png");
+      tripleSpeedBtn.width = "50px";
+      tripleSpeedBtn.height = "50px";
+      tripleSpeedBtn.onPointerClickObservable.add(async () => {
+        this.currentDeathSpeed = this.deathSpeed[3];
+        this.currentTurnSpeed = this.turnSpeed[3];
+        this.currentFrameSpeed = this.framesSpeed[3];
+        this.currentMoveWaitSpeed = this.moveWaitSpeed[3];
       });
 
       // add speed option buttons to speed panel
-      speedPanel.addControl(doubleSpeedButton);
-      speedPanel.addControl(halfSpeedButton);
-      speedPanel.addControl(normalSpeedButton);
-      speedPanel.addControl(bigSpeedButton);
+      speedPanel.addControl(halfSpeedBtn);
+      speedPanel.addControl(defaultSpeedBtn);
+      speedPanel.addControl(doubleSpeedBtn);
+      speedPanel.addControl(tripleSpeedBtn);
 
       // create light
       let light = new BABYLON.HemisphericLight(
@@ -531,6 +510,11 @@ export class SceneLoader {
     // this.camera.target = new BABYLON.Vector3(11, -2, 13.5);
 
     //this.camera.target.x = 11;
+
+    // this.camera.target.x = rows;
+    // this.camera.target.y = (rows - columns);
+    // this.camera.target.z = columns;
+
     this.camera.target.x = rows;
     this.camera.target.y = (rows - columns);
     this.camera.target.z = columns;
@@ -539,9 +523,11 @@ export class SceneLoader {
     for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
       // initializing movementGrid
       this.movementGrid[rowIndex] = [];
+      this.treeArray[rowIndex] = [];
       for (let columnIndex = 0; columnIndex < columns; columnIndex++) {
         // filling movementGrid
         this.movementGrid[rowIndex][columnIndex] = 0;
+        this.treeArray[rowIndex][columnIndex] = 0;
 
         // find current tile
         let existingTile = definition.tiles.find(
@@ -553,14 +539,58 @@ export class SceneLoader {
         if (existingTile) {
           // tid == 1, place dark grass + tree
           if (existingTile.tid == 1) {
+            this.movementGrid[rowIndex][columnIndex] = 1;
+            this.treeArray[rowIndex][columnIndex] = 1;
             let top = Atlas.topTiles.get("GrassTop1.glb").createInstance("top");
             top.position = new BABYLON.Vector3(
               rowIndex * 2.1,
               0,
               columnIndex * 2.1
             );
-            this.getTree(rowIndex * 2.1, 1.6, columnIndex * 2.1);
-            this.movementGrid[rowIndex][columnIndex] = 1;
+
+            // if (rowIndex != 0 
+            //   && rowIndex != rows
+            //   && columnIndex != 0
+            //   && columnIndex != columns) {
+            //     if (this.checkAvailability(rowIndex, columnIndex)) {
+            //       BABYLON.SceneLoader.ImportMesh("", "./public/", "House.glb", this.scene, function (meshes) {
+            //         meshes.forEach((mesh) => {
+            //           if (mesh.material) {
+            //             mesh.material.needDepthPrePass = true;
+            //           }
+            //         });
+            //         let root = meshes[0];
+            //         root.position = new BABYLON.Vector3(rowIndex + 9, 0.7, columnIndex - 3.2);
+            //         root.scaling = new BABYLON.Vector3(2.1, 2.1, 2.1);
+            //         //root.rotation = new BABYLON.Vector3(0, Math.round(Math.random() * 4) * 90, 0);
+            //         //root.rotation = new BABYLON.Vector3(0, Math.floor(Math.random() * 4) * 90, 0);
+            //         //console.log(Math.floor(Math.random() * 4) * 90);
+            //     });
+            //     }
+            //   }
+
+            // merge not edge and check house
+            // if (this.notEdge(rowIndex, columnIndex) && this.checkHouse(rowIndex, columnIndex)) {
+            //   console.log("can place house here!!");
+            //   BABYLON.SceneLoader.ImportMesh("", "./public/", "House.glb", this.scene, function (meshes) {
+            //     meshes.forEach((mesh) => {
+            //       if (mesh.material) {
+            //         mesh.material.needDepthPrePass = true;
+            //       }
+            //     });
+            //     let root = meshes[0];
+            //     root.position = new BABYLON.Vector3(rowIndex * 2.1, 0, columnIndex * 2.1);
+                
+            //   });
+            // }   
+            // else if (this.housePlaced) {
+
+            // }
+            // else {
+              // NEED THIS
+              //this.getTree(rowIndex * 2.1, 1.6, columnIndex * 2.1);
+            // }      
+            
           }
           // tid == 2, place water
           else if (existingTile.tid == 2) {
@@ -837,7 +867,37 @@ export class SceneLoader {
             columnIndex * 2.1
           );
         }
+
         
+        
+        // non-functional object (NFO) placement algorithm
+        // firstly, checks if the tile is defined
+        if (existingTile != null) {
+          // then runs a switch statement off the existing tiles id (tid)
+          // where,
+          //    1 = tree
+          //    2 = water
+          switch (existingTile.tid) {
+            case 1: {
+
+              break;
+            }
+            case 2: {
+
+              break;
+            }
+            default: {
+              break;
+            }
+          }
+        }
+        // if the tile isn't defined, calls object placement function (WaterTile = false)
+        else {
+
+        }
+        // WRITE NEW OBJECT PLACEMENT FUNCTION (replacing chooseItem())
+        // ALSO NEED TO UPDATE MESHLOADER, ADDING NEW MODELS AND CHANGING GROUPINGS
+
         if (existingTile != null && existingTile.tid == 2) {
           if (globalThis.detailLevel == 3) {
             this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, true);
@@ -867,7 +927,7 @@ export class SceneLoader {
         - below works except on long islands
         - island is 4.5 tiles x 4.5 tiles
     */ 
-    BABYLON.SceneLoader.ImportMesh("", "./", "island.glb", this.scene, function (meshes) {
+    BABYLON.SceneLoader.ImportMesh("", "/", "island.glb", this.scene, function (meshes) {
       meshes.forEach((mesh) => {
         if (mesh.material) {
           mesh.material.needDepthPrePass = true;
@@ -881,39 +941,329 @@ export class SceneLoader {
     });
 
 
-    // create and set up control stack
-    // var controlPanel = new GUI.StackPanel();
-    // controlPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    // controlPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-    // this.glbGUI.addControl(controlPanel);
+        //loading clouds on sides of island, bottom, top, right and left are the clouds positions per view from when the camera is initially loaded
+     
+        BABYLON.SceneLoader.ImportMesh( //bottom cloud
+        "",
+        "./", 
+        "cloud.glb", 
+        this.scene,
+        function(meshes){
+          meshes.forEach((mesh)=> {
+            if(mesh.material){
+              mesh.material.needDepthPrePass = true;
+            }
+          });
+          var rowCentre = (rows * 2.1 - 2.1) / 2;
+          var colCentre = (columns * 2.1 - 2.1) / 2;  
+          let cloud = meshes[0];
+          cloud.scaling = new BABYLON.Vector3(7,7,7); 
+          cloud.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
+          cloud.position = new BABYLON.Vector3(((rowCentre + rows)*2.1)+10,-20, colCentre);
+        }
+      );
+      BABYLON.SceneLoader.ImportMesh( //top cloud
+        "",
+        "./", 
+        "cloud.glb", 
+        this.scene,
+        function(meshes){
+          meshes.forEach((mesh)=> {
+            if(mesh.material){
+              mesh.material.needDepthPrePass = true;
+            }
+          });
+          var rowCentre = (rows * 2.1 - 2.1) / 2;
+          var colCentre = (columns * 2.1 - 2.1) / 2;  
+          let cloud = meshes[0];
+          cloud.scaling = new BABYLON.Vector3(7,7,7); 
+          cloud.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
 
-    // let wBTN = GUI.Button.CreateSimpleButton("Move", "W");
-    // wBTN.width = "50px";
-    // wBTN.height = "50px";
-    // wBTN.color = "white";
-    // wBTN.background = "grey";
-    // wBTN.onPointerClickObservable.add(() => {
-    //   setTimeout(async () => {
-    //     this.claraMoveForwardFunction();
-    //   });
-    // });
-
-    // controlPanel.addControl(wBTN);
-
-    // let turnRight = GUI.Button.CreateImageOnlyButton("turnRight", "/higher.png");
-    // turnRight.height = "50px";
-    // turnRight.width = "50px";
-    // turnRight.onPointerClickObservable.add(() => {
-    //   this.claraTurnRightFunction();
-    // });
-
-    // controlPanel.addControl(turnRight);
+          cloud.position = new BABYLON.Vector3((rowCentre - rows*2.1)*2.1,-20,colCentre);
+        }
+      );
+      
+      BABYLON.SceneLoader.ImportMesh( // right cloud
+        "",
+        "./", 
+        "cloud.glb", 
+        this.scene,
+        function(meshes){
+          meshes.forEach((mesh)=> {
+            if(mesh.material){
+              mesh.material.needDepthPrePass = true;
+            }
+          });
+          let cloud = meshes[0];
+          var rowCentre = (rows * 2.1 - 2.1) / 2;
+          var colCentre = (columns * 2.1 - 2.1) / 2;  
+          cloud.scaling = new BABYLON.Vector3(7, 7, 7); 
+          cloud.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
+          cloud.position = new BABYLON.Vector3(rowCentre,-20,(colCentre + columns)*2.1);
+        }
+      );
     
-    this.createDistantIsland(25,1,25);
-    this.createDistantIsland(25,1,50);
-    this.createDistantIsland(-50,1,-25);
-    this.createDistantIsland(50,1,-25);
+      BABYLON.SceneLoader.ImportMesh( //left cloud
+        "",
+        "./", 
+        "cloud.glb", 
+        this.scene,
+        function(meshes){
+          meshes.forEach((mesh)=> {
+            if(mesh.material){
+              mesh.material.needDepthPrePass = true;
+            }
+          });
+          let cloud = meshes[0];
+          var rowCentre = (rows * 2.1 - 2.1) / 2;
+          var colCentre = (columns * 2.1 - 2.1) / 2;  
+          cloud.scaling = new BABYLON.Vector3(7,7,7);
+          cloud.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0); 
+          cloud.position = new BABYLON.Vector3(rowCentre,-20,((colCentre - columns*2.1)*2.1)-10);
+        }
+      );
+
+    // chooses how many islands to create based on detail level
+    // if detail level is high create 10
+    if (this.detailLevel == 3) {
+      for (let i = 0; i < 10; i++) {
+        // get random x value (pos or neg multiple of rows)
+        let x = rows * (Math.random() * 10) + 6;
+        x *= Math.round(Math.random()) ? 1 : -1;
+
+        // get random y value (between -10 to 10)
+        let y = Math.floor(Math.random()*10) + 1;
+        y *= Math.round(Math.random()) ? 1 : -1;
+
+        // get random z value (pos or neg multiple of columns)
+        let z = columns * (Math.random() * 10) + 6;
+        z *= Math.round(Math.random()) ? 1 : -1;
+
+        // call create island func
+        this.createDistantIsland(x, y, z);
+      }
+    }
+    // else if detail level is medium create 5
+    else if (this.detailLevel == 2) {
+      for (let i = 0; i < 5; i++) {
+        // get random x value (pos or neg multiple of rows)
+        let x = rows * (Math.random() * 10) + 6;
+        x *= Math.round(Math.random()) ? 1 : -1;
+
+        // get random y value (between -10 to 10)
+        let y = Math.floor(Math.random()*10) + 1;
+        y *= Math.round(Math.random()) ? 1 : -1;
+
+        // get random z value (pos or neg multiple of columns)
+        let z = columns * (Math.random() * 10) + 6;
+        z *= Math.round(Math.random()) ? 1 : -1;
+
+        // call create island func
+        this.createDistantIsland(x, y, z);
+      }
+    }
+    //this.checkHouseAvailability();
+    //console.log(this.isWin(1));
+
+    this.checkSpots();
+    console.log("HOUSE ARRAY = ", this.houseArray);
+    if (this.houseArray.length > 0) {
+      console.log(this.houseArray[0][0]);
+      BABYLON.SceneLoader.ImportMesh("", "/", "House.glb", this.scene,  (meshes) => {
+        meshes.forEach((mesh) => {
+          if (mesh.material) {
+            mesh.material.needDepthPrePass = true;
+          }
+        });
+        let root = meshes[0];
+        
+        root.position = new BABYLON.Vector3((this.houseArray[0][0]*2.1)+1.05, 2.1, (this.houseArray[0][1]*2.1)+1.05);
+        root.scaling = new BABYLON.Vector3(2.1, 2.1, 2.1);
+        //root.rotation = new BABYLON.Vector3(0, Math.round(Math.random() * 4) * 90, 0);
+        //root.rotation = new BABYLON.Vector3(0, Math.floor(Math.random() * 4) * 90, 0);
+        //console.log(Math.floor(Math.random() * 4) * 90);
+    });
+    }
   }
+
+  checkSpots() {
+    console.log("TREE ARRAY = ", this.treeArray);
+    for (let rowIndex = 1; rowIndex < this.glbDef.rows-2; rowIndex++) {
+      for (let colIndex = 1; colIndex < this.glbDef.columns-2; colIndex++) {
+        if (this.checkEight(rowIndex,colIndex) 
+        && this.checkEight(rowIndex+1,colIndex) 
+        && this.checkEight(rowIndex+1,colIndex+1) 
+        && this.checkEight(rowIndex,colIndex+1)) {
+          this.treeArray[rowIndex][colIndex] = 0;
+          this.treeArray[rowIndex][colIndex+1] = 0;
+          this.treeArray[rowIndex+1][colIndex] = 0;
+          this.treeArray[rowIndex+1][colIndex+1] = 0;
+          this.houseArray.push([rowIndex,  colIndex]);
+        }
+      }
+    }
+  }
+
+  checkEight(rowCoord: number, colCoord: number) {
+    return (
+      this.treeArray[rowCoord-1][colCoord-1] == 1
+      && this.treeArray[rowCoord-1][colCoord] == 1
+      && this.treeArray[rowCoord-1][colCoord+1] == 1
+      && this.treeArray[rowCoord][colCoord-1] == 1
+      && this.treeArray[rowCoord][colCoord] == 1
+      && this.treeArray[rowCoord][colCoord+1] == 1
+      && this.treeArray[rowCoord+1][colCoord-1] == 1
+      && this.treeArray[rowCoord+1][colCoord] == 1
+      && this.treeArray[rowCoord+1][colCoord+1] == 1)    
+  }
+
+  // notEdge(rIndex: number, cIndex: number) {
+  //   if (rIndex == 0
+  //     || rIndex == this.glbDef.rows
+  //     || cIndex == 0
+  //     || cIndex == this.glbDef.columns) {
+  //     return false;
+  //   }
+  //   else {
+  //     return true;
+  //   }
+  // }
+  
+
+  checkAvailability(cIndex: number, rIndex: number) {
+    console.log(this.movementGrid);
+    console.log("rows = ", this.glbDef.rows);
+    console.log("columns = ", this.glbDef.columns);
+    if (this.movementGrid[rIndex-1][cIndex-1] == 1 
+      && this.movementGrid[rIndex-1][cIndex] == 1 
+      && this.movementGrid[rIndex][cIndex-1] == 1 
+      && this.movementGrid[rIndex][cIndex] == 1
+      ) {
+        return true;
+      }
+  }
+
+  checkHouseAvailability() {
+    for (let rowIndex = 1; rowIndex < this.glbDef.rows; rowIndex++) {
+      for (let colIndex = 1; colIndex < this.glbDef.columns; colIndex++) {
+        if (this.movementGrid[rowIndex][colIndex] == 1
+          && this.movementGrid[rowIndex][colIndex+1] == 1
+          && this.movementGrid[rowIndex+1][colIndex] == 1
+          && this.movementGrid[rowIndex+1][colIndex+1] == 1) {
+            console.log("HELLLOOOOO");
+            BABYLON.SceneLoader.ImportMesh("", "./public/", "House.glb", this.scene, function (meshes) {
+                meshes.forEach((mesh) => {
+                  if (mesh.material) {
+                    mesh.material.needDepthPrePass = true;
+                  }
+                });
+                let root = meshes[0];
+                root.position = new BABYLON.Vector3(rowIndex + 10, 0.7, colIndex - 2.2);
+                root.scaling = new BABYLON.Vector3(2.1, 2.1, 2.1);
+                //root.rotation = new BABYLON.Vector3(0, Math.round(Math.random() * 4) * 90, 0);
+                //root.rotation = new BABYLON.Vector3(0, Math.floor(Math.random() * 4) * 90, 0);
+                //console.log(Math.floor(Math.random() * 4) * 90);
+            });
+            return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // checkHouse(rIndex: number, cIndex: number) {
+  //   if (this.movementGrid[rIndex-1][cIndex-1] == 1 
+  //     && this.movementGrid[rIndex-1][cIndex] == 1 
+  //     && this.movementGrid[rIndex][cIndex-1] == 1 
+  //     && this.movementGrid[rIndex][cIndex] == 1
+  //     ) {
+  //       //placeHouse();
+  //       console.log("nice!!");
+  //       return true;
+  //     }
+  //   else if (this.movementGrid[rIndex-1][cIndex] == 1 
+  //     && this.movementGrid[rIndex-1][cIndex+1] == 1 
+  //     && this.movementGrid[rIndex][cIndex] == 1 
+  //     && this.movementGrid[rIndex][cIndex+1] == 1) {
+  //       //placeHouse();
+  //       console.log("nice!!");
+  //       return true;
+  //     }
+  //   // else if (this.movementGrid[rIndex][cIndex-1] == 1 
+  //   //   && this.movementGrid[rIndex][cIndex] == 1 
+  //   //   && this.movementGrid[rIndex+1][cIndex-1] == 1 
+  //   //   && this.movementGrid[rIndex+1][cIndex] == 1) {
+  //   //     //placeHouse();
+  //   //     console.log("nice!!");
+  //   //   }
+  //   else if (this.movementGrid[rIndex][cIndex] == 1 
+  //     && this.movementGrid[rIndex][cIndex+1] == 1 
+  //     && this.movementGrid[rIndex+1][cIndex] == 1 
+  //     && this.movementGrid[rIndex+1][cIndex+1] == 1) {
+  //       //placeHouse();
+  //       console.log("nice!!");
+  //       return true;
+  //     }
+  //   return false;
+  // }
+
+  // checkVertical(check: number): boolean {
+  //   for(let i = 0; i < this.glbDef.columns; ++i){
+  //     if (this.movementGrid[0][i] === check 
+  //         && this.movementGrid[1][i] === check
+  //         && this.movementGrid[2][i] === check
+  //         && this.movementGrid[3][i] === check
+  //     ) {
+  //       return true;
+  //     }
+      
+  //     if (this.movementGrid[1][i] === check 
+  //         && this.movementGrid[2][i] === check
+  //         && this.movementGrid[3][i] === check
+  //         && this.movementGrid[4][i] === check
+  //     ) {
+  //       return true;
+  //     }
+  //   }
+  //   return false;
+  // }
+  
+  // checkHorizontal(check: number): boolean {
+  //   for(let i = 0; i < this.glbDef.rows; ++i){
+  //     if (this.movementGrid[i][0] === check 
+  //         && this.movementGrid[i][1] === check
+  //         && this.movementGrid[i][2] === check
+  //         && this.movementGrid[i][3] === check
+  //     ) {
+  //       return true;
+  //     }
+      
+  //     if (this.movementGrid[i][1] === check 
+  //         && this.movementGrid[i][2] === check
+  //         && this.movementGrid[i][3] === check
+  //         && this.movementGrid[i][4] === check
+  //     ) {
+  //       return true;
+  //     }
+  //   }
+  //   return false;
+  // }
+  
+  // function checkDiagonal1(field, player){
+  //   // exercise for the reader
+  //   return false;
+  // }
+  
+  // function checkDiagonal2(field, player){
+  //   // exercise for the reader
+  //   return false;
+  // }
+  
+  // isWin(check: number) {
+  //   return this.checkVertical(check) || this.checkHorizontal(check);
+   
+  // }
+  
 
   // function to generate random tree
   // tree preferences:
@@ -1411,7 +1761,8 @@ export class SceneLoader {
     this.playerAnimator.stop();
       this.playerAnimator.start(true, 1, 60, 156); //walk
   }
-playClaraDeathAnimation = async() =>{
+
+  playClaraDeathAnimation = async() => {
     console.log("about to wait " + this.currentDeathSpeed + " milli-seconds");
     this.playerAnimator.stop();
     this.playerAnimator.start(true, 1, 320, 366); //death
@@ -1441,6 +1792,7 @@ playClaraDeathAnimation = async() =>{
     //this.scene.beginAnimation(this.clara, 120, 156, true);
     this.playerAnimator.start(true, 1, 240, 312); //turn right
   }
+
   playClaraTurnLeftAnimation(){
     this.playerAnimator.stop();
       this.playerAnimator.start(true, 1, 160, 232); //turn left
@@ -1536,19 +1888,18 @@ playClaraDeathAnimation = async() =>{
     return v;
   }
 
-
   // function to create a distant island
   createDistantIsland(x: number, y: number, z: number) {
-    let iRows = Math.floor(Math.random() * (6 - 2)) + 2;  // rows of the island (min 2, max 6)
-    let iCols = Math.floor(Math.random() * (6 - 2)) + 2;  // columns of the island (min 2, max 6)
-    
-    y = Math.floor(Math.random() * 10); // y coordinate randomised atm
+    // iRows = rows of the island (min 2, max 6)
+    // iCols = columns of the island (min 2, max 6)
+    let iRows = Math.floor(Math.random() * (6 - 2)) + 2;
+    let iCols = Math.floor(Math.random() * (6 - 2)) + 2; 
 
     // island generation loop
     for (let iRowsIndex = 0; iRowsIndex < iRows; iRowsIndex++) {
       for (let iColsIndex = 0; iColsIndex < iCols; iColsIndex++) {
         // determines tile type (1 = dark grass, 2 = light grass, 3 = water)
-        let tileType = Math.floor(Math.random() * 3) + 1;
+        let tileType = Math.floor(Math.random() * 2) + 1;
         // if tile is water, place water
         if (tileType == 3) {
           let tile = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
