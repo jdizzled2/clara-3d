@@ -241,7 +241,7 @@ export class SceneLoader {
       //    - cam3 = angle 3 (limited-free range)
 
       // create and setup cam1 button
-      var cam1 = GUI.Button.CreateImageOnlyButton("cam1", "/top-down.png");
+      var cam1 = GUI.Button.CreateImageOnlyButton("cam1", "top-down.png");
       cam1.width = "60px";
       cam1.height = "50px";
       cam1.color = "transparent";
@@ -254,7 +254,7 @@ export class SceneLoader {
       });
 
       // create and setup cam2 button
-      var cam2 = GUI.Button.CreateImageOnlyButton("cam2", "/side-view.png");
+      var cam2 = GUI.Button.CreateImageOnlyButton("cam2", "side-view.png");
       cam2.width = "60px";
       cam2.height = "50px";
       cam2.color = "transparent";
@@ -267,7 +267,7 @@ export class SceneLoader {
       });
 
       // create and setup cam3 button
-      var cam3 = GUI.Button.CreateImageOnlyButton("cam3", "/free-view.png");
+      var cam3 = GUI.Button.CreateImageOnlyButton("cam3", "free-view.png");
       cam3.width = "60px";
       cam3.height = "50px";
       cam3.color = "transparent";
@@ -300,7 +300,7 @@ export class SceneLoader {
       // create and setup decrease detail button
       let lowerDetailBtn = GUI.Button.CreateImageOnlyButton(
         "lower",
-        "/lower.png"
+        "lower.png"
       );
       lowerDetailBtn.height = "25px";
       lowerDetailBtn.width = "25px";
@@ -319,7 +319,7 @@ export class SceneLoader {
       // create and setup increase detail button
       let higherDetailBtn = GUI.Button.CreateImageOnlyButton(
         "higher",
-        "/higher.png"
+        "higher.png"
       );
       higherDetailBtn.height = "25px";
       higherDetailBtn.width = "25px";
@@ -336,7 +336,7 @@ export class SceneLoader {
       });
 
       // create and setup reload button
-      var reloadBtn = GUI.Button.CreateImageOnlyButton("reload", "/reload.png");
+      var reloadBtn = GUI.Button.CreateImageOnlyButton("reload", "reload.png");
       reloadBtn.height = "25px";
       reloadBtn.width = "35px";
       reloadBtn.paddingLeft = "10px";
@@ -366,7 +366,7 @@ export class SceneLoader {
       // create and setup half speed button
       let halfSpeedBtn = GUI.Button.CreateImageOnlyButton(
         "half",
-        "/icons/halfSpeed.png"
+        "halfSpeed.png"
       );
       halfSpeedBtn.width = "50px";
       halfSpeedBtn.height = "30px";
@@ -380,7 +380,7 @@ export class SceneLoader {
       // create and setup normal speed button
       let defaultSpeedBtn = GUI.Button.CreateImageOnlyButton(
         "default",
-        "/icons/defaultSpeed.png"
+        "icons/defaultSpeed.png"
       );
       defaultSpeedBtn.width = "50px";
       defaultSpeedBtn.height = "30px";
@@ -395,7 +395,7 @@ export class SceneLoader {
       // create and setup double speed button
       let doubleSpeedBtn = GUI.Button.CreateImageOnlyButton(
         "double",
-        "/icons/doubleSpeed.png"
+        "/doubleSpeed.png"
       );
       doubleSpeedBtn.width = "50px";
       doubleSpeedBtn.height = "30px";
@@ -410,7 +410,7 @@ export class SceneLoader {
       // create and setup fast speed button
       let fastSpeedBtn = GUI.Button.CreateImageOnlyButton(
         "triple",
-        "/icons/fastSpeed.png"
+        "fastSpeed.png"
       );
       fastSpeedBtn.width = "50px";
       fastSpeedBtn.height = "30px";
