@@ -1,10 +1,10 @@
 // imports & includes
-import * as BABYLON from '@babylonjs/core';
-import { highlightsPixelShader } from '@babylonjs/core/Shaders/highlights.fragment';
-import * as GUI from '@babylonjs/gui';
-import '@babylonjs/loaders/glTF/2.0/glTFLoader';
+import * as BABYLON from "@babylonjs/core";
+import { TimerState } from "@babylonjs/core";
+import * as GUI from "@babylonjs/gui";
+import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
-import { Atlas, preloadMeshes } from './MeshLoader';
+import { Atlas, preloadMeshes } from "./MeshLoader";
 
 // board details object
 type SceneDefinition = {
@@ -14,50 +14,55 @@ type SceneDefinition = {
 };
 
 // delay for speed settings
-const delay = ms => new Promise(res => setTimeout(res, ms));
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // sceneloader class
 export class SceneLoader {
   // general variables
-  scene: BABYLON.Scene;                 // global scene var
-  light: BABYLON.HemisphericLight;      // global light var
-  camera: BABYLON.ArcRotateCamera;      // global camera var
+  scene: BABYLON.Scene; // global scene var
+  light: BABYLON.HemisphericLight; // global light var
+  camera: BABYLON.ArcRotateCamera; // global camera var
   assetsManager: BABYLON.AssetsManager; // global assetmanager
-  detailLevel: number;                  // level of detail variable
-  glbDef: SceneDefinition;              // global scene definition
-  housePlaced = false;                 // check for house placement
+  detailLevel: number; // level of detail variable
+  glbDef: SceneDefinition; // global scene definition
+  treeArray = []; // tree grid of board
+  houseArray = []; // array of possible NFO positions
 
   // clara variables
   playerAnimator: BABYLON.AnimationGroup; // clara animation
-  clara: BABYLON.AbstractMesh;            // clara herself 
-  
+  clara: BABYLON.AbstractMesh; // clara herself
+
   // movement variables
-  directionFacing: number;          // direction clara is facing (0 - north, 1 - east, 2 - south, 3 - west)
-  startPosition: BABYLON.Vector3;   // clara's start position
+  directionFacing: number; // direction clara is facing (0 - north, 1 - east, 2 - south, 3 - west)
+  startPosition: BABYLON.Vector3; // clara's start position
   currentPosition: BABYLON.Vector3; // clara's current position
-  movementGrid = [];                // board grid
-  claraXCoord: number;              // xcoord in grid
-  claraYCoord: number;              // ycoord in grid
-  justMoved = false;                // movement check
-  leavesCollected: number;          // leaf count
-  alive = true;                     // alive check
+  movementGrid = []; // board grid
+  claraXCoord: number; // xcoord in grid
+  claraYCoord: number; // ycoord in grid
+  justMoved = false; // movement check
+  leavesCollected: number; // leaf count
+  leafCount: number;
+  alive = true; // alive check
 
   // speed settings and variables (CHANGED)
   // 0 = half speed
   // 1 = normal speed
   // 2 = double speed
   // 3 = triple speed
-  deathSpeed = [1600, 800, 400, 100];     
+  deathSpeed = [1600, 800, 400, 100];
   turnSpeed = [600, 300, 150, 50];
   framesSpeed = [30, 60, 120, 480];
   moveWaitSpeed = [2200, 1100, 550, 200];
+  leafAnimationSpeed = [200, 800, 1800, 3200];
   currentDeathSpeed: number;
   currentTurnSpeed: number;
   currentFrameSpeed: number;
   currentMoveWaitSpeed: number;
+  currentLeafAnimationSpeed: number;
 
-  treeArray = [];
-  houseArray = [];
+  leafAnimatorArray: BABYLON.AnimationGroup[][] = [];
+  leafs: BABYLON.AbstractMesh[][] = [];
+  mushrooms: BABYLON.AbstractMesh[][] = [];
 
   // canvas initiation
   async initCanvas(canvas: HTMLCanvasElement) {
@@ -65,6 +70,7 @@ export class SceneLoader {
 
     // create scene function
     var createScene = (passedDL: number) => {
+      this.leafs = [];
 
       // create scene
       let scene = new BABYLON.Scene(engine);
@@ -78,10 +84,12 @@ export class SceneLoader {
 
       // set defaults
       this.leavesCollected = 0;
+      this.leafCount = 0;
       this.currentDeathSpeed = this.deathSpeed[1];
       this.currentTurnSpeed = this.turnSpeed[1];
       this.currentFrameSpeed = this.framesSpeed[1];
       this.currentMoveWaitSpeed = this.moveWaitSpeed[1];
+      this.currentLeafAnimationSpeed = this.leafAnimationSpeed[1];
 
       // assign detail level
       this.detailLevel = passedDL;
@@ -102,11 +110,10 @@ export class SceneLoader {
       // camera.target.y = -2;
       // camera.target.z = 13.5;
 
-      // set camera default camera angle (cam2)
-      // camera.lowerBetaLimit = Math.PI/2;
-      // camera.upperBetaLimit = Math.PI/3;
-      // camera.lowerRadiusLimit = 30;
-      // camera.upperRadiusLimit = 30;
+      camera.lowerBetaLimit = 0;
+      camera.upperBetaLimit = Math.PI / 2;
+      camera.lowerRadiusLimit = 30;
+      camera.upperRadiusLimit = 50;
 
       // set camera sensitivity
       camera.angularSensibilityX = 5000;
@@ -115,7 +122,7 @@ export class SceneLoader {
       camera.checkCollisions = true;
       camera.attachControl("canvas", true);
       this.camera = camera;
-      
+
       /* BELOW IS FOR MINIMAP CODE, NOT SURE ABT IT YET 
       var camera2 = new BABYLON.ArcRotateCamera("Camera", -Math.PI/2, 0.001, 60, new BABYLON.Vector3(11, -2, 13.5), scene);
       scene.activeCameras = [];
@@ -159,7 +166,7 @@ export class SceneLoader {
 
       */
 
-      // create gui 
+      // create gui
       var claraGUI = GUI.AdvancedDynamicTexture.CreateFullscreenUI(
         "UI",
         true,
@@ -171,8 +178,8 @@ export class SceneLoader {
       cameraPanel.isVertical = false;
       cameraPanel.height = "100px";
       cameraPanel.width = "185px";
-      cameraPanel.paddingRight = "10px"
-      cameraPanel.paddingTop = "10px"
+      cameraPanel.paddingRight = "10px";
+      cameraPanel.paddingTop = "10px";
       cameraPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
       cameraPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
 
@@ -181,8 +188,8 @@ export class SceneLoader {
       optionsPanel.isVertical = false;
       optionsPanel.width = "220px";
       optionsPanel.height = "70px";
-      optionsPanel.paddingLeft = "10px"
-      optionsPanel.paddingTop = "10px"
+      optionsPanel.paddingLeft = "10px";
+      optionsPanel.paddingTop = "10px";
       optionsPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
       optionsPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
 
@@ -190,11 +197,11 @@ export class SceneLoader {
       var speedPanel = new GUI.StackPanel();
       speedPanel.isVertical = false;
       speedPanel.width = "200px";
-      speedPanel.height = "50px";
-      speedPanel.paddingTop = "10px"
+      speedPanel.height = "30px";
+      speedPanel.background = "Black";
       speedPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-      speedPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-      
+      speedPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+
       // add stacks to gui
       claraGUI.addControl(cameraPanel);
       claraGUI.addControl(optionsPanel);
@@ -231,7 +238,7 @@ export class SceneLoader {
       // create camera angle buttons
       //    - cam1 = angle 1 (higher)
       //    - cam2 = angle 2 (lower)
-      //    - cam3 = angle 3 (limited-free range) - NEEDS TO BE IMPLEMENTED
+      //    - cam3 = angle 3 (limited-free range)
 
       // create and setup cam1 button
       var cam1 = GUI.Button.CreateImageOnlyButton("cam1", "/top-down.png");
@@ -267,25 +274,23 @@ export class SceneLoader {
       cam3.paddingRight = "10px";
       cam3.onPointerClickObservable.add(function () {
         camera.lowerBetaLimit = 0;
-        camera.upperBetaLimit = 0;
-        camera.lowerRadiusLimit = 0;
-        camera.upperRadiusLimit = 0;
+        camera.upperBetaLimit = Math.PI / 2;
+        camera.lowerRadiusLimit = 30;
+        camera.upperRadiusLimit = 50;
       });
-      
+
       // add buttons to camera stack
       cameraPanel.addControl(cam1);
       cameraPanel.addControl(cam2);
       cameraPanel.addControl(cam3);
 
-      // create detail text 
+      // create detail text
       let detail = new GUI.TextBlock();
       if (globalThis.detailLevel == 1) {
         detail.text = "Low";
-      }
-      else if (globalThis.detailLevel == 2) {
+      } else if (globalThis.detailLevel == 2) {
         detail.text = "Medium";
-      }
-      else {
+      } else {
         detail.text = "High";
       }
       detail.height = "20px";
@@ -293,37 +298,39 @@ export class SceneLoader {
       detail.color = "black";
 
       // create and setup decrease detail button
-      let lowerDetailBtn = GUI.Button.CreateImageOnlyButton("lower", "/lower.png");
+      let lowerDetailBtn = GUI.Button.CreateImageOnlyButton(
+        "lower",
+        "/lower.png"
+      );
       lowerDetailBtn.height = "25px";
       lowerDetailBtn.width = "25px";
       lowerDetailBtn.onPointerClickObservable.add(function () {
         if (globalThis.detailLevel == 1) {
           console.log("can't go lower");
-        }
-        else if (globalThis.detailLevel == 2) {
+        } else if (globalThis.detailLevel == 2) {
           globalThis.detailLevel = 1;
           detail.text = "Low";
-        }
-        else {
+        } else {
           globalThis.detailLevel = 2;
           detail.text = "Medium";
         }
       });
 
       // create and setup increase detail button
-      let higherDetailBtn = GUI.Button.CreateImageOnlyButton("higher", "/higher.png");
+      let higherDetailBtn = GUI.Button.CreateImageOnlyButton(
+        "higher",
+        "/higher.png"
+      );
       higherDetailBtn.height = "25px";
       higherDetailBtn.width = "25px";
       higherDetailBtn.onPointerClickObservable.add(function () {
         if (globalThis.detailLevel == 1) {
           globalThis.detailLevel = 2;
           detail.text = "Medium";
-        }
-        else if (globalThis.detailLevel == 2) {
+        } else if (globalThis.detailLevel == 2) {
           globalThis.detailLevel = 3;
           detail.text = "High";
-        }
-        else {
+        } else {
           console.log("can't go higher");
         }
       });
@@ -337,6 +344,8 @@ export class SceneLoader {
         console.log("Scene is now reloading...");
 
         this.scene.dispose();
+        this.treeArray = [];
+        this.houseArray = [];
         var newScene = createScene(globalThis.detailLevel);
         this.assetsManager = new BABYLON.AssetsManager(newScene);
         await preloadMeshes(this.assetsManager);
@@ -344,7 +353,7 @@ export class SceneLoader {
           newScene.render();
         });
         this.loadScene(this.glbDef);
-        
+
         console.log("Scene has reloaded!");
       });
 
@@ -355,9 +364,12 @@ export class SceneLoader {
       optionsPanel.addControl(reloadBtn);
 
       // create and setup half speed button
-      let halfSpeedBtn = GUI.Button.CreateImageOnlyButton("half", "/icons/halfSpeed.png");
+      let halfSpeedBtn = GUI.Button.CreateImageOnlyButton(
+        "half",
+        "/icons/halfSpeed.png"
+      );
       halfSpeedBtn.width = "50px";
-      halfSpeedBtn.height = "50px";
+      halfSpeedBtn.height = "30px";
       halfSpeedBtn.onPointerClickObservable.add(async () => {
         this.currentDeathSpeed = this.deathSpeed[0];
         this.currentTurnSpeed = this.turnSpeed[0];
@@ -366,9 +378,13 @@ export class SceneLoader {
       });
 
       // create and setup normal speed button
-      let defaultSpeedBtn = GUI.Button.CreateImageOnlyButton("default", "/icons/defaultSpeed.png");
+      let defaultSpeedBtn = GUI.Button.CreateImageOnlyButton(
+        "default",
+        "/icons/defaultSpeed.png"
+      );
       defaultSpeedBtn.width = "50px";
-      defaultSpeedBtn.height = "50px";
+      defaultSpeedBtn.height = "30px";
+      // defaultSpeedBtn.paddingTop = "20px";
       defaultSpeedBtn.onPointerClickObservable.add(async () => {
         this.currentDeathSpeed = this.deathSpeed[1];
         this.currentTurnSpeed = this.turnSpeed[1];
@@ -377,9 +393,13 @@ export class SceneLoader {
       });
 
       // create and setup double speed button
-      let doubleSpeedBtn = GUI.Button.CreateImageOnlyButton("double", "/icons/doubleSpeed.png");
+      let doubleSpeedBtn = GUI.Button.CreateImageOnlyButton(
+        "double",
+        "/icons/doubleSpeed.png"
+      );
       doubleSpeedBtn.width = "50px";
-      doubleSpeedBtn.height = "50px";
+      doubleSpeedBtn.height = "30px";
+      // doubleSpeedBtn.paddingTop = "20px";
       doubleSpeedBtn.onPointerClickObservable.add(async () => {
         this.currentDeathSpeed = this.deathSpeed[2];
         this.currentTurnSpeed = this.turnSpeed[2];
@@ -387,11 +407,15 @@ export class SceneLoader {
         this.currentMoveWaitSpeed = this.moveWaitSpeed[2];
       });
 
-      // create and setup triple speed button
-      let tripleSpeedBtn = GUI.Button.CreateImageOnlyButton("triple", "/icons/tripleSpeed.png");
-      tripleSpeedBtn.width = "50px";
-      tripleSpeedBtn.height = "50px";
-      tripleSpeedBtn.onPointerClickObservable.add(async () => {
+      // create and setup fast speed button
+      let fastSpeedBtn = GUI.Button.CreateImageOnlyButton(
+        "triple",
+        "/icons/fastSpeed.png"
+      );
+      fastSpeedBtn.width = "50px";
+      fastSpeedBtn.height = "30px";
+      // fastSpeedBtn.paddingTop = "20px";
+      fastSpeedBtn.onPointerClickObservable.add(async () => {
         this.currentDeathSpeed = this.deathSpeed[3];
         this.currentTurnSpeed = this.turnSpeed[3];
         this.currentFrameSpeed = this.framesSpeed[3];
@@ -402,7 +426,7 @@ export class SceneLoader {
       speedPanel.addControl(halfSpeedBtn);
       speedPanel.addControl(defaultSpeedBtn);
       speedPanel.addControl(doubleSpeedBtn);
-      speedPanel.addControl(tripleSpeedBtn);
+      speedPanel.addControl(fastSpeedBtn);
 
       // create light
       let light = new BABYLON.HemisphericLight(
@@ -415,52 +439,66 @@ export class SceneLoader {
       // setup keyboard input handling
       var inputMap = {};
       scene.actionManager = new BABYLON.ActionManager(scene);
-      scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (evt) {
-          inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
-      }));
-      scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (evt) {
-          inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
-      }));
+      scene.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(
+          BABYLON.ActionManager.OnKeyDownTrigger,
+          function (evt) {
+            inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+          }
+        )
+      );
+      scene.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(
+          BABYLON.ActionManager.OnKeyUpTrigger,
+          function (evt) {
+            inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+          }
+        )
+      );
 
       var animating = true;
 
       scene.onBeforeRenderObservable.add(() => {
         var keydown = false;
-       
+
         //Manage the movements of the character (e.g. position, direction)
         if (inputMap["w"] || inputMap["W"]) {
           this.claraMoveForwardFunction();
-            
-            keydown = true;
+
+          keydown = true;
         }
-        if (inputMap["s"]) { //if clara wants to move backwards
-          
+        if (inputMap["s"]) {
+          //if clara wants to move backwards
+
           keydown = true;
         }
         if (inputMap["a"]) {
-          
-            keydown = true;
+          keydown = true;
         }
         if (inputMap["d"]) {
-          if(this.alive){
+          if (this.alive) {
             this.claraTurnRightFunction();
           }
-          
-            keydown = true;
-        }
-        if (inputMap["b"]) {          
 
-            keydown = true;
+          keydown = true;
+        }
+        if (inputMap["b"]) {
+          keydown = true;
         }
 
-         //Manage animations to be played  
-         if (keydown) {
+        //Manage animations to be played
+        if (keydown) {
           if (!animating) {
-              animating = true;
-              if (inputMap["w"] || inputMap["a"] || inputMap["s"] || inputMap["d"]) {
-                  //Walk backwards
-                  this.playerAnimator.start(true, 1, 60, 160);
-              }
+            animating = true;
+            if (
+              inputMap["w"] ||
+              inputMap["a"] ||
+              inputMap["s"] ||
+              inputMap["d"]
+            ) {
+              //Walk backwards
+              this.playerAnimator.start(true, 1, 60, 160);
+            }
           }
         }
       });
@@ -479,12 +517,13 @@ export class SceneLoader {
     window.addEventListener("resize", function () {
       engine.resize();
     });
-    
+
     // assign default detail level
     this.detailLevel = 3;
 
     // create scene
     var scene = createScene(this.detailLevel);
+
     // assign asset manager
     this.assetsManager = new BABYLON.AssetsManager(scene);
 
@@ -516,17 +555,23 @@ export class SceneLoader {
     // this.camera.target.z = columns;
 
     this.camera.target.x = rows;
-    this.camera.target.y = (rows - columns);
+    this.camera.target.y = rows - columns;
     this.camera.target.z = columns;
+
+    // this.camera.target.x = rows + (rows/2.1);
+    // this.camera.target.y = columns - (columns/2.1);
+    // this.camera.target.z = columns;
 
     // create board loop
     for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
       // initializing movementGrid
       this.movementGrid[rowIndex] = [];
       this.treeArray[rowIndex] = [];
+      this.mushrooms[rowIndex] = [];
       for (let columnIndex = 0; columnIndex < columns; columnIndex++) {
         // filling movementGrid
         this.movementGrid[rowIndex][columnIndex] = 0;
+        // filling treeArray
         this.treeArray[rowIndex][columnIndex] = 0;
 
         // find current tile
@@ -539,7 +584,9 @@ export class SceneLoader {
         if (existingTile) {
           // tid == 1, place dark grass + tree
           if (existingTile.tid == 1) {
+            // assign movementGrid element to 1
             this.movementGrid[rowIndex][columnIndex] = 1;
+            // assign treeArray element to 1
             this.treeArray[rowIndex][columnIndex] = 1;
             let top = Atlas.topTiles.get("GrassTop1.glb").createInstance("top");
             top.position = new BABYLON.Vector3(
@@ -547,50 +594,6 @@ export class SceneLoader {
               0,
               columnIndex * 2.1
             );
-
-            // if (rowIndex != 0 
-            //   && rowIndex != rows
-            //   && columnIndex != 0
-            //   && columnIndex != columns) {
-            //     if (this.checkAvailability(rowIndex, columnIndex)) {
-            //       BABYLON.SceneLoader.ImportMesh("", "./public/", "House.glb", this.scene, function (meshes) {
-            //         meshes.forEach((mesh) => {
-            //           if (mesh.material) {
-            //             mesh.material.needDepthPrePass = true;
-            //           }
-            //         });
-            //         let root = meshes[0];
-            //         root.position = new BABYLON.Vector3(rowIndex + 9, 0.7, columnIndex - 3.2);
-            //         root.scaling = new BABYLON.Vector3(2.1, 2.1, 2.1);
-            //         //root.rotation = new BABYLON.Vector3(0, Math.round(Math.random() * 4) * 90, 0);
-            //         //root.rotation = new BABYLON.Vector3(0, Math.floor(Math.random() * 4) * 90, 0);
-            //         //console.log(Math.floor(Math.random() * 4) * 90);
-            //     });
-            //     }
-            //   }
-
-            // merge not edge and check house
-            // if (this.notEdge(rowIndex, columnIndex) && this.checkHouse(rowIndex, columnIndex)) {
-            //   console.log("can place house here!!");
-            //   BABYLON.SceneLoader.ImportMesh("", "./public/", "House.glb", this.scene, function (meshes) {
-            //     meshes.forEach((mesh) => {
-            //       if (mesh.material) {
-            //         mesh.material.needDepthPrePass = true;
-            //       }
-            //     });
-            //     let root = meshes[0];
-            //     root.position = new BABYLON.Vector3(rowIndex * 2.1, 0, columnIndex * 2.1);
-                
-            //   });
-            // }   
-            // else if (this.housePlaced) {
-
-            // }
-            // else {
-              // NEED THIS
-              //this.getTree(rowIndex * 2.1, 1.6, columnIndex * 2.1);
-            // }      
-            
           }
           // tid == 2, place water
           else if (existingTile.tid == 2) {
@@ -604,135 +607,248 @@ export class SceneLoader {
             let gap = 2.1;
 
             if (this.detailLevel != 1) {
-              let waterParticles = new BABYLON.ParticleSystem("particles", 1000, this.scene);
-              waterParticles.particleTexture = new BABYLON.Texture("spray.png"); 
+              let waterParticles = new BABYLON.ParticleSystem(
+                "particles",
+                1000,
+                this.scene
+              );
+              waterParticles.particleTexture = new BABYLON.Texture("spray.png");
               waterParticles.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1,
-                0,                                                                
+                0,
                 columnIndex * 2.1
-            );
-            waterParticles.start();
-            
+              );
+
+              waterParticles.emitRate = 1;
+              waterParticles.minSize = 0;
+              waterParticles.maxSize = 0.5;
+              waterParticles.start();
+            }
+
             /*
                if tile on edge, put waterfall
             */
-               if(rowIndex == 0){
-                let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-                top.position = new BABYLON.Vector3((rowIndex * 2.1)-1.15, -0.1, columnIndex * 2.1);
-                top.scaling = new BABYLON.Vector3(1.2,1,1.2);
-                top.rotation = new BABYLON.Vector3 (0,0,Math.PI/2)
-                let gap = 2.1
-                var particleSys = new BABYLON.ParticleSystem("particles", 1000, this.scene); //creates the particle system
-  
+            if (rowIndex == 0) {
+              let top = Atlas.topTiles
+                .get("WaterTop.glb")
+                .createInstance("top");
+              top.position = new BABYLON.Vector3(
+                rowIndex * 2.1 - 1.15,
+                -0.1,
+                columnIndex * 2.1
+              );
+              top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+              top.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
+              let gap = 2.1;
+              var particleSys = new BABYLON.ParticleSystem(
+                "particles",
+                1000,
+                this.scene
+              ); //creates the particle system
+
+              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+
+              particleSys.emitter = new BABYLON.Vector3(
+                rowIndex * 2.1 - 1.15,
+                -0.1,
+                columnIndex * 2.1
+              );
+              particleSys.start();
+              for (let i = 0; i < 5; i++) {
+                let top = Atlas.topTiles
+                  .get("WaterTop.glb")
+                  .createInstance("top");
+                top.position = new BABYLON.Vector3(
+                  rowIndex * 2.1 - 1.15,
+                  -0.1 - gap,
+                  columnIndex * 2.1
+                );
+                top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+                top.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
+                var particleSys = new BABYLON.ParticleSystem(
+                  "particles",
+                  1000,
+                  this.scene
+                ); //creates the particle system
+
                 particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-  
-                particleSys.emitter = new BABYLON.Vector3((rowIndex * 2.1)-1.15, -0.1, columnIndex * 2.1);
+
+                particleSys.emitter = new BABYLON.Vector3(
+                  rowIndex * 2.1 - 1.15,
+                  -0.1 - gap,
+                  columnIndex * 2.1
+                );
                 particleSys.start();
-                for(let i = 0;i<5;i++){
-                let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-                top.position = new BABYLON.Vector3((rowIndex * 2.1)-1.15, (-0.1)-gap, columnIndex * 2.1);
-                top.scaling = new BABYLON.Vector3(1.2,1,1.2);
-                top.rotation = new BABYLON.Vector3 (0,0,Math.PI/2);
-                var particleSys = new BABYLON.ParticleSystem("particles", 1000, this.scene); //creates the particle system
-  
+                gap += 2.1;
+              }
+            }
+
+            if (rowIndex == rows - 1) {
+              let top = Atlas.topTiles
+                .get("WaterTop.glb")
+                .createInstance("top");
+              top.position = new BABYLON.Vector3(
+                rowIndex * 2.1 + 1.15,
+                -0.1,
+                columnIndex * 2.1
+              );
+              top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+              top.rotation = new BABYLON.Vector3(0, Math.PI, Math.PI / 2);
+
+              gap = 2.1;
+
+              var particleSys = new BABYLON.ParticleSystem(
+                "particles",
+                1000,
+                this.scene
+              ); //creates the particle system
+              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+              particleSys.emitter = new BABYLON.Vector3(
+                rowIndex * 2.1 + 1.15,
+                -0.1,
+                columnIndex * 2.1
+              );
+              particleSys.start();
+
+              for (let i = 0; i < 5; i++) {
+                let top = Atlas.topTiles
+                  .get("WaterTop.glb")
+                  .createInstance("top");
+                top.position = new BABYLON.Vector3(
+                  rowIndex * 2.1 + 1.15,
+                  -0.1 - gap,
+                  columnIndex * 2.1
+                );
+                top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+                top.rotation = new BABYLON.Vector3(0, Math.PI, Math.PI / 2);
+
+                var particleSys = new BABYLON.ParticleSystem(
+                  "particles",
+                  1000,
+                  this.scene
+                ); //creates the particle system
                 particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-  
-                particleSys.emitter = new BABYLON.Vector3((rowIndex * 2.1)-1.15, (-0.1)-gap, columnIndex * 2.1);
+                particleSys.emitter = new BABYLON.Vector3(
+                  rowIndex * 2.1 + 1.15,
+                  -0.1 - gap,
+                  columnIndex * 2.1
+                );
                 particleSys.start();
-                gap+=2.1;
-                }
+
+                gap += 2.1;
               }
-  
-               if(rowIndex == rows-1){
-                let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-                top.position = new BABYLON.Vector3((rowIndex * 2.1)+1.15, -0.1, columnIndex * 2.1);
-                top.scaling = new BABYLON.Vector3(1.2,1,1.2);
-                top.rotation = new BABYLON.Vector3 (0,Math.PI,Math.PI/2)
-  
-                gap = 2.1
-  
-                var particleSys = new BABYLON.ParticleSystem("particles", 1000, this.scene); //creates the particle system
+            }
+
+            if (columnIndex == 0) {
+              let top = Atlas.topTiles
+                .get("WaterTop.glb")
+                .createInstance("top");
+              top.position = new BABYLON.Vector3(
+                rowIndex * 2.1,
+                -0.1,
+                columnIndex * 2.1 - 1.15
+              );
+              top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+              top.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
+              gap = 2.1;
+
+              var particleSys = new BABYLON.ParticleSystem(
+                "particles",
+                1000,
+                this.scene
+              ); //creates the particle system
+              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+              particleSys.emitter = new BABYLON.Vector3(
+                rowIndex * 2.1,
+                -0.1,
+                columnIndex * 2.1 - 1.15
+              );
+              particleSys.start();
+
+              for (let i = 0; i < 5; i++) {
+                let top = Atlas.topTiles
+                  .get("WaterTop.glb")
+                  .createInstance("top");
+                top.position = new BABYLON.Vector3(
+                  rowIndex * 2.1,
+                  -0.1 - gap,
+                  columnIndex * 2.1 - 1.15
+                );
+                top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+                top.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
+
+                var particleSys = new BABYLON.ParticleSystem(
+                  "particles",
+                  1000,
+                  this.scene
+                ); //creates the particle system
                 particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                particleSys.emitter = new BABYLON.Vector3((rowIndex * 2.1)+1.15, -0.1, columnIndex * 2.1);
+                particleSys.emitter = new BABYLON.Vector3(
+                  rowIndex * 2.1,
+                  -0.1 - gap,
+                  columnIndex * 2.1 - 1.15
+                );
                 particleSys.start();
-  
-                for(let i = 0;i<5;i++){
-                  
-                  let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-                  top.position = new BABYLON.Vector3((rowIndex * 2.1)+1.15, (-0.1)-gap, columnIndex * 2.1);
-                  top.scaling = new BABYLON.Vector3(1.2,1,1.2);
-                  top.rotation = new BABYLON.Vector3 (0,Math.PI,Math.PI/2)
-  
-                  var particleSys = new BABYLON.ParticleSystem("particles", 1000, this.scene); //creates the particle system
-                  particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                  particleSys.emitter = new BABYLON.Vector3((rowIndex * 2.1)+1.15, (-0.1)-gap, columnIndex * 2.1);
-                  particleSys.start();
-  
-                  gap+=2.1;
-                }
-  
+                gap += 2.1;
               }
-  
-               if(columnIndex == 0){
-                let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-                top.position = new BABYLON.Vector3(rowIndex * 2.1, -0.1, (columnIndex * 2.1)-1.15);
-                top.scaling = new BABYLON.Vector3(1.2,1,1.2);
-                top.rotation = new BABYLON.Vector3 (Math.PI/2,Math.PI,0)
-                gap = 2.1
-  
-                var particleSys = new BABYLON.ParticleSystem("particles", 1000, this.scene); //creates the particle system
+            }
+
+            if (columnIndex == columns - 1) {
+              let top = Atlas.topTiles
+                .get("WaterTop.glb")
+                .createInstance("top");
+              top.position = new BABYLON.Vector3(
+                rowIndex * 2.1,
+                -0.1,
+                columnIndex * 2.1 + 1.15
+              );
+              top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+              top.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
+
+              var particleSys = new BABYLON.ParticleSystem(
+                "particles",
+                1000,
+                this.scene
+              ); //creates the particle system
+              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+              particleSys.emitter = new BABYLON.Vector3(
+                rowIndex * 2.1,
+                -0.1,
+                columnIndex * 2.1 + 1.15
+              );
+              particleSys.start();
+
+              gap = 2.1;
+
+              for (let i = 0; i < 5; i++) {
+                let top = Atlas.topTiles
+                  .get("WaterTop.glb")
+                  .createInstance("top");
+                top.position = new BABYLON.Vector3(
+                  rowIndex * 2.1,
+                  -0.1 - gap,
+                  columnIndex * 2.1 + 1.15
+                );
+                top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+                top.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
+
+                var particleSys = new BABYLON.ParticleSystem(
+                  "particles",
+                  1000,
+                  this.scene
+                ); //creates the particle system
                 particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                particleSys.emitter = new BABYLON.Vector3(rowIndex * 2.1, -0.1, (columnIndex * 2.1)-1.15);
+                particleSys.emitter = new BABYLON.Vector3(
+                  rowIndex * 2.1,
+                  -0.1 - gap,
+                  columnIndex * 2.1 + 1.15
+                );
                 particleSys.start();
-  
-                for(let i=0;i<5;i++){
-                  let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-                  top.position = new BABYLON.Vector3(rowIndex * 2.1, (-0.1)-gap, (columnIndex * 2.1)-1.15);
-                  top.scaling = new BABYLON.Vector3(1.2,1,1.2);
-                  top.rotation = new BABYLON.Vector3 (Math.PI/2,Math.PI,0)
-                  
-                  var particleSys = new BABYLON.ParticleSystem("particles", 1000, this.scene); //creates the particle system
-                  particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                  particleSys.emitter = new BABYLON.Vector3(rowIndex * 2.1, (-0.1)-gap, (columnIndex * 2.1)-1.15);
-                  particleSys.start();
-                  gap+=2.1;
-  
-                }
-  
+
+                gap += 2.1;
               }
-  
-              if(columnIndex == columns-1){
-                let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-                top.position = new BABYLON.Vector3(rowIndex * 2.1, -0.1, (columnIndex * 2.1)+1.15);
-                top.scaling = new BABYLON.Vector3(1.2,1,1.2);
-                top.rotation = new BABYLON.Vector3 (Math.PI/2,0,0)
-                
-                var particleSys = new BABYLON.ParticleSystem("particles", 1000, this.scene); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                particleSys.emitter = new BABYLON.Vector3(rowIndex * 2.1, -0.1, (columnIndex * 2.1)+1.15);
-                particleSys.start();
-  
-                gap = 2.1;
-  
-                for(let i=0;i<5;i++){
-  
-                  let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-                  top.position = new BABYLON.Vector3(rowIndex * 2.1, (-0.1)-gap, (columnIndex * 2.1)+1.15);
-                  top.scaling = new BABYLON.Vector3(1.2,1,1.2);
-                  top.rotation = new BABYLON.Vector3 (Math.PI/2,0,0)
-                  
-                  var particleSys = new BABYLON.ParticleSystem("particles", 1000, this.scene); //creates the particle system
-                  particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                  particleSys.emitter = new BABYLON.Vector3(rowIndex * 2.1, (-0.1)-gap, (columnIndex * 2.1)+1.15);
-                  particleSys.start();
-  
-                  gap+=2.1
-  
-                }
-  
-              }
-  
-              }
+            }
+
             this.movementGrid[rowIndex][columnIndex] = 2;
           }
           // existing tile is game object (clara, leaf, ghost), place lighter grass
@@ -749,20 +865,19 @@ export class SceneLoader {
             );
             switch (existingTile.tid) {
               case 4: {
-                
                 BABYLON.SceneLoader.ImportMesh(
                   "",
                   "./",
                   "Clara.glb",
                   this.scene,
-                  (meshes, ps, skeletons, ags) => {
+                  (meshes, unused1, unused2, ags) => {
                     meshes.forEach((mesh) => {
                       if (mesh.material) {
                         mesh.material.needDepthPrePass = true;
                       }
                     });
-                    let tile = meshes[0];
-                    tile.position = new BABYLON.Vector3(
+                    let clara = meshes[0];
+                    clara.position = new BABYLON.Vector3(
                       rowIndex * 2.1,
                       1,
                       columnIndex * 2.1
@@ -772,39 +887,81 @@ export class SceneLoader {
 
                     this.playerAnimator = ags[0];
                     this.playerAnimator.stop();
-
-                    //var skeleton = skeletons[0];
-                    //sc.stopAnimation(skeleton);
-                    //sc.beginAnimation(skeleton, 0, 29, true, 2.0);
+                    this.playerAnimator.start(true, 1, 0, 60);
                   }
                 );
-                this.startPosition = new BABYLON.Vector3(rowIndex*2.1, 1, columnIndex *2.1);            // assign clara's starting positioning for resets
+                this.startPosition = new BABYLON.Vector3(
+                  rowIndex * 2.1,
+                  1,
+                  columnIndex * 2.1
+                ); // assign clara's starting positioning for resets
                 //console.log("tile ", this.clara.position);
-                this.directionFacing = existingTile.d;        // assign clara's current direction
+                this.directionFacing = existingTile.d; // assign clara's current direction
                 this.movementGrid[rowIndex][columnIndex] = 4; // assign clara in movement grid
-                this.claraXCoord = rowIndex;      // log clara's current x coord in grid
-                this.claraYCoord = columnIndex;   // log clara's current y coord in grid
+                this.claraXCoord = rowIndex; // log clara's current x coord in grid
+                this.claraYCoord = columnIndex; // log clara's current y coord in grid
                 break;
               }
               case 5: {
                 // leaf
 
                 this.movementGrid[rowIndex][columnIndex] = 5;
-                const box = BABYLON.MeshBuilder.CreateBox("box", {height: 1, width: 0.75, depth: 0.25});
-                box.position = new BABYLON.Vector3(rowIndex*2.1, 1.5, columnIndex*2.1);
-
-                this.movementGrid[rowIndex][columnIndex] = 5;
+                BABYLON.SceneLoader.ImportMesh(
+                  "",
+                  "./",
+                  "Leaf.glb",
+                  this.scene,
+                  (meshes, ps, skeletons, ags) => {
+                    meshes.forEach((mesh) => {
+                      if (mesh.material) {
+                        mesh.material.needDepthPrePass = true;
+                      }
+                    });
+                    let leaf1 = meshes[0];
+                    leaf1.name = "leaf";
+                    leaf1.position = new BABYLON.Vector3(
+                      rowIndex * 2.1,
+                      1.5,
+                      columnIndex * 2.1
+                    );
+                    leaf1.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
+                    // remember where we instantiated the leaf
+                    if (this.leafs[rowIndex] == null) {
+                      this.leafs[rowIndex] = [];
+                    }
+                    this.leafs[rowIndex][columnIndex] = leaf1;
+                    if (this.leafAnimatorArray[rowIndex] == null) {
+                      this.leafAnimatorArray[rowIndex] = [];
+                    }
+                    this.leafAnimatorArray[rowIndex][columnIndex] = ags[0];
+                    this.leafAnimatorArray[rowIndex][columnIndex].stop();
+                    this.leafAnimatorArray[rowIndex][columnIndex].start(
+                      true,
+                      1,
+                      0,
+                      145
+                    );
+                  }
+                );
                 break;
               }
               case 6: {
                 // mushroom
 
                 this.movementGrid[rowIndex][columnIndex] = 6;
-                 let item = "Mushrooms1";
-                 let top = Atlas.mushrooms.get(item +".glb").createInstance("");
-                 top.position = new BABYLON.Vector3(rowIndex*2.1, 1.5, columnIndex*2.1);
-                 top.scaling = new BABYLON.Vector3(4,4,4);
+                let item = "Mushrooms1";
+                let top = Atlas.mushrooms.get(item + ".glb").createInstance("");
+                top.position = new BABYLON.Vector3(
+                  rowIndex * 2.1,
+                  1.5,
+                  columnIndex * 2.1
+                );
+                top.scaling = new BABYLON.Vector3(4, 4, 4);
                 this.movementGrid[rowIndex][columnIndex] = 6;
+                if (this.mushrooms[rowIndex] == null) {
+                  this.mushrooms[rowIndex] = [];
+                }
+                this.mushrooms[rowIndex][columnIndex] = top;
                 break;
               }
               case 7: {
@@ -868,8 +1025,6 @@ export class SceneLoader {
           );
         }
 
-        
-        
         // non-functional object (NFO) placement algorithm
         // firstly, checks if the tile is defined
         if (existingTile != null) {
@@ -879,11 +1034,9 @@ export class SceneLoader {
           //    2 = water
           switch (existingTile.tid) {
             case 1: {
-
               break;
             }
             case 2: {
-
               break;
             }
             default: {
@@ -893,7 +1046,6 @@ export class SceneLoader {
         }
         // if the tile isn't defined, calls object placement function (WaterTile = false)
         else {
-
         }
         // WRITE NEW OBJECT PLACEMENT FUNCTION (replacing chooseItem())
         // ALSO NEED TO UPDATE MESHLOADER, ADDING NEW MODELS AND CHANGING GROUPINGS
@@ -901,127 +1053,37 @@ export class SceneLoader {
         if (existingTile != null && existingTile.tid == 2) {
           if (globalThis.detailLevel == 3) {
             this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, true);
-          }
-          else if (globalThis.detailLevel == 2) {
-            if ((Math.floor(Math.random() * 10)) + 1 < 5) {
-            this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, true);
+          } else if (globalThis.detailLevel == 2) {
+            if (Math.floor(Math.random() * 10) + 1 < 5) {
+              this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, true);
             }
           }
-        }
-        else {
+        } else {
           if (this.detailLevel == 3) {
             this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, false);
-          }
-          else if (this.detailLevel == 2) {
-            if ((Math.floor(Math.random() * 10)) + 1 < 5) {
+          } else if (this.detailLevel == 2) {
+            if (Math.floor(Math.random() * 10) + 1 < 5) {
               this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, false);
             }
           }
         }
-        
       }
     }
 
-    /* 
-        NEED TO GET BOTTOM OF ISLAND SCALING 
-        - below works except on long islands
-        - island is 4.5 tiles x 4.5 tiles
-    */ 
-    BABYLON.SceneLoader.ImportMesh("", "/", "island.glb", this.scene, function (meshes) {
-      meshes.forEach((mesh) => {
-        if (mesh.material) {
-          mesh.material.needDepthPrePass = true;
-        }
-      });
-      let root = meshes[0];
-      let islandX = (rows * 2.1 - 2.1) / 2;
-      let islandY = (columns * 2.1 - 2.1) / 2;
-      root.position = new BABYLON.Vector3(islandX, 1.5, islandY);
-      root.scaling = new BABYLON.Vector3(rows / 4.5, 1.8, columns / 4.5);
-    });
-
-
-        //loading clouds on sides of island, bottom, top, right and left are the clouds positions per view from when the camera is initially loaded
-     
-        BABYLON.SceneLoader.ImportMesh( //bottom cloud
-        "",
-        "./", 
-        "cloud.glb", 
-        this.scene,
-        function(meshes){
-          meshes.forEach((mesh)=> {
-            if(mesh.material){
-              mesh.material.needDepthPrePass = true;
-            }
-          });
-          var rowCentre = (rows * 2.1 - 2.1) / 2;
-          var colCentre = (columns * 2.1 - 2.1) / 2;  
-          let cloud = meshes[0];
-          cloud.scaling = new BABYLON.Vector3(7,7,7); 
-          cloud.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-          cloud.position = new BABYLON.Vector3(((rowCentre + rows)*2.1)+10,-20, colCentre);
-        }
-      );
-      BABYLON.SceneLoader.ImportMesh( //top cloud
-        "",
-        "./", 
-        "cloud.glb", 
-        this.scene,
-        function(meshes){
-          meshes.forEach((mesh)=> {
-            if(mesh.material){
-              mesh.material.needDepthPrePass = true;
-            }
-          });
-          var rowCentre = (rows * 2.1 - 2.1) / 2;
-          var colCentre = (columns * 2.1 - 2.1) / 2;  
-          let cloud = meshes[0];
-          cloud.scaling = new BABYLON.Vector3(7,7,7); 
-          cloud.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-
-          cloud.position = new BABYLON.Vector3((rowCentre - rows*2.1)*2.1,-20,colCentre);
-        }
-      );
-      
-      BABYLON.SceneLoader.ImportMesh( // right cloud
-        "",
-        "./", 
-        "cloud.glb", 
-        this.scene,
-        function(meshes){
-          meshes.forEach((mesh)=> {
-            if(mesh.material){
-              mesh.material.needDepthPrePass = true;
-            }
-          });
-          let cloud = meshes[0];
-          var rowCentre = (rows * 2.1 - 2.1) / 2;
-          var colCentre = (columns * 2.1 - 2.1) / 2;  
-          cloud.scaling = new BABYLON.Vector3(7, 7, 7); 
-          cloud.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-          cloud.position = new BABYLON.Vector3(rowCentre,-20,(colCentre + columns)*2.1);
-        }
-      );
-    
-      BABYLON.SceneLoader.ImportMesh( //left cloud
-        "",
-        "./", 
-        "cloud.glb", 
-        this.scene,
-        function(meshes){
-          meshes.forEach((mesh)=> {
-            if(mesh.material){
-              mesh.material.needDepthPrePass = true;
-            }
-          });
-          let cloud = meshes[0];
-          var rowCentre = (rows * 2.1 - 2.1) / 2;
-          var colCentre = (columns * 2.1 - 2.1) / 2;  
-          cloud.scaling = new BABYLON.Vector3(7,7,7);
-          cloud.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0); 
-          cloud.position = new BABYLON.Vector3(rowCentre,-20,((colCentre - columns*2.1)*2.1)-10);
-        }
-      );
+    // place island bottom and scale
+    let width = (rows * 2.1 - 2.1) / 2;
+    let length = (columns * 2.1 - 2.1) / 2;
+    this.importMesh(
+      "Island",
+      width,
+      1.5,
+      length,
+      0,
+      true,
+      rows / 4.5,
+      1.8,
+      columns / 4.5
+    );
 
     // chooses how many islands to create based on detail level
     // if detail level is high create 10
@@ -1032,7 +1094,7 @@ export class SceneLoader {
         x *= Math.round(Math.random()) ? 1 : -1;
 
         // get random y value (between -10 to 10)
-        let y = Math.floor(Math.random()*10) + 1;
+        let y = Math.floor(Math.random() * 10) + 1;
         y *= Math.round(Math.random()) ? 1 : -1;
 
         // get random z value (pos or neg multiple of columns)
@@ -1051,7 +1113,7 @@ export class SceneLoader {
         x *= Math.round(Math.random()) ? 1 : -1;
 
         // get random y value (between -10 to 10)
-        let y = Math.floor(Math.random()*10) + 1;
+        let y = Math.floor(Math.random() * 10) + 1;
         y *= Math.round(Math.random()) ? 1 : -1;
 
         // get random z value (pos or neg multiple of columns)
@@ -1062,208 +1124,153 @@ export class SceneLoader {
         this.createDistantIsland(x, y, z);
       }
     }
-    //this.checkHouseAvailability();
-    //console.log(this.isWin(1));
 
-    this.checkSpots();
-    console.log("HOUSE ARRAY = ", this.houseArray);
-    if (this.houseArray.length > 0) {
-      console.log(this.houseArray[0][0]);
-      BABYLON.SceneLoader.ImportMesh("", "/", "House.glb", this.scene,  (meshes) => {
+    this.placeClouds(rows, columns);
+    this.checkNFOAvailability();
+    for (let i = 0; i < this.houseArray.length; i++) {
+      this.importMesh(
+        "House",
+        this.houseArray[i][0] * 2.1 + 1.05,
+        2.1,
+        this.houseArray[i][1] * 2.1 + 1.05,
+        Math.round(Math.random() * 4) * 300,
+        true,
+        2.1,
+        2.1,
+        2.1
+      );
+    }
+    this.placeTrees();
+  }
+
+  // function to place 4 static clouds around the island on all angles
+  placeClouds(rows: number, cols: number) {
+    var rCentre = (rows * 2.1 - 2.1) / 2;
+    var cCentre = (cols * 2.1 - 2.1) / 2;
+    let x,
+      y = -20,
+      z;
+    for (let i = 0; i < 4; i++) {
+      switch (i) {
+        // bottom cloud
+        case 0: {
+          x = (rCentre + rows) * 2.1 + 10;
+          z = cCentre;
+          break;
+        }
+        // top cloud
+        case 1: {
+          x = (rCentre - rows * 2.1) * 2.1;
+          z = cCentre;
+          break;
+        }
+        // right cloud
+        case 2: {
+          x = rCentre;
+          z = (cCentre + cols) * 2.1;
+          break;
+        }
+        // left cloud
+        case 3: {
+          x = rCentre;
+          z = (cCentre - cols * 2.1) * 2.1 - 10;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      this.importMesh("Cloud", x, y, z, Math.random() * 180, true, 7, 7, 7);
+    }
+  }
+
+  // dynamic import mesh function that takes describing parameters
+  //    meshName = name of mesh
+  //    x = xPosition
+  //    y = yPosition
+  //    z = zPosition
+  //    z = rotation
+  //    scale = whether to scale or not
+  //    scaleX = xValue to scale to
+  //    scaleY = yValue to scale to
+  //    scaleZ = zValue to scale to
+  importMesh(
+    meshName: String,
+    x: number,
+    y: number,
+    z: number,
+    r: number,
+    scale: boolean,
+    scaleX: number,
+    scaleY: number,
+    scaleZ: number
+  ) {
+    BABYLON.SceneLoader.ImportMesh(
+      "",
+      "/",
+      meshName + ".glb",
+      this.scene,
+      (meshes) => {
         meshes.forEach((mesh) => {
           if (mesh.material) {
             mesh.material.needDepthPrePass = true;
           }
         });
         let root = meshes[0];
-        
-        root.position = new BABYLON.Vector3((this.houseArray[0][0]*2.1)+1.05, 2.1, (this.houseArray[0][1]*2.1)+1.05);
-        root.scaling = new BABYLON.Vector3(2.1, 2.1, 2.1);
-        //root.rotation = new BABYLON.Vector3(0, Math.round(Math.random() * 4) * 90, 0);
-        //root.rotation = new BABYLON.Vector3(0, Math.floor(Math.random() * 4) * 90, 0);
-        //console.log(Math.floor(Math.random() * 4) * 90);
-    });
-    }
+        root.position = new BABYLON.Vector3(x, y, z);
+        if (scale) {
+          root.scaling = new BABYLON.Vector3(scaleX, scaleY, scaleZ);
+        }
+        if (r != 0) {
+          root.rotation = new BABYLON.Vector3(0, r, 0);
+        }
+      }
+    );
   }
 
-  checkSpots() {
+  checkNFOAvailability() {
     console.log("TREE ARRAY = ", this.treeArray);
-    for (let rowIndex = 1; rowIndex < this.glbDef.rows-2; rowIndex++) {
-      for (let colIndex = 1; colIndex < this.glbDef.columns-2; colIndex++) {
-        if (this.checkEight(rowIndex,colIndex) 
-        && this.checkEight(rowIndex+1,colIndex) 
-        && this.checkEight(rowIndex+1,colIndex+1) 
-        && this.checkEight(rowIndex,colIndex+1)) {
+    for (let rowIndex = 1; rowIndex < this.glbDef.rows - 2; rowIndex++) {
+      for (let colIndex = 1; colIndex < this.glbDef.columns - 2; colIndex++) {
+        if (
+          this.checkSurroundingTiles(rowIndex, colIndex) &&
+          this.checkSurroundingTiles(rowIndex + 1, colIndex) &&
+          this.checkSurroundingTiles(rowIndex + 1, colIndex + 1) &&
+          this.checkSurroundingTiles(rowIndex, colIndex + 1)
+        ) {
           this.treeArray[rowIndex][colIndex] = 0;
-          this.treeArray[rowIndex][colIndex+1] = 0;
-          this.treeArray[rowIndex+1][colIndex] = 0;
-          this.treeArray[rowIndex+1][colIndex+1] = 0;
-          this.houseArray.push([rowIndex,  colIndex]);
+          this.treeArray[rowIndex][colIndex + 1] = 0;
+          this.treeArray[rowIndex + 1][colIndex] = 0;
+          this.treeArray[rowIndex + 1][colIndex + 1] = 0;
+          this.houseArray.push([rowIndex, colIndex]);
         }
       }
     }
   }
 
-  checkEight(rowCoord: number, colCoord: number) {
+  checkSurroundingTiles(rowCoord: number, colCoord: number) {
     return (
-      this.treeArray[rowCoord-1][colCoord-1] == 1
-      && this.treeArray[rowCoord-1][colCoord] == 1
-      && this.treeArray[rowCoord-1][colCoord+1] == 1
-      && this.treeArray[rowCoord][colCoord-1] == 1
-      && this.treeArray[rowCoord][colCoord] == 1
-      && this.treeArray[rowCoord][colCoord+1] == 1
-      && this.treeArray[rowCoord+1][colCoord-1] == 1
-      && this.treeArray[rowCoord+1][colCoord] == 1
-      && this.treeArray[rowCoord+1][colCoord+1] == 1)    
+      this.treeArray[rowCoord - 1][colCoord - 1] == 1 &&
+      this.treeArray[rowCoord - 1][colCoord] == 1 &&
+      this.treeArray[rowCoord - 1][colCoord + 1] == 1 &&
+      this.treeArray[rowCoord][colCoord - 1] == 1 &&
+      this.treeArray[rowCoord][colCoord] == 1 &&
+      this.treeArray[rowCoord][colCoord + 1] == 1 &&
+      this.treeArray[rowCoord + 1][colCoord - 1] == 1 &&
+      this.treeArray[rowCoord + 1][colCoord] == 1 &&
+      this.treeArray[rowCoord + 1][colCoord + 1] == 1
+    );
   }
 
-  // notEdge(rIndex: number, cIndex: number) {
-  //   if (rIndex == 0
-  //     || rIndex == this.glbDef.rows
-  //     || cIndex == 0
-  //     || cIndex == this.glbDef.columns) {
-  //     return false;
-  //   }
-  //   else {
-  //     return true;
-  //   }
-  // }
-  
-
-  checkAvailability(cIndex: number, rIndex: number) {
-    console.log(this.movementGrid);
-    console.log("rows = ", this.glbDef.rows);
-    console.log("columns = ", this.glbDef.columns);
-    if (this.movementGrid[rIndex-1][cIndex-1] == 1 
-      && this.movementGrid[rIndex-1][cIndex] == 1 
-      && this.movementGrid[rIndex][cIndex-1] == 1 
-      && this.movementGrid[rIndex][cIndex] == 1
-      ) {
-        return true;
-      }
-  }
-
-  checkHouseAvailability() {
-    for (let rowIndex = 1; rowIndex < this.glbDef.rows; rowIndex++) {
-      for (let colIndex = 1; colIndex < this.glbDef.columns; colIndex++) {
-        if (this.movementGrid[rowIndex][colIndex] == 1
-          && this.movementGrid[rowIndex][colIndex+1] == 1
-          && this.movementGrid[rowIndex+1][colIndex] == 1
-          && this.movementGrid[rowIndex+1][colIndex+1] == 1) {
-            console.log("HELLLOOOOO");
-            BABYLON.SceneLoader.ImportMesh("", "./public/", "House.glb", this.scene, function (meshes) {
-                meshes.forEach((mesh) => {
-                  if (mesh.material) {
-                    mesh.material.needDepthPrePass = true;
-                  }
-                });
-                let root = meshes[0];
-                root.position = new BABYLON.Vector3(rowIndex + 10, 0.7, colIndex - 2.2);
-                root.scaling = new BABYLON.Vector3(2.1, 2.1, 2.1);
-                //root.rotation = new BABYLON.Vector3(0, Math.round(Math.random() * 4) * 90, 0);
-                //root.rotation = new BABYLON.Vector3(0, Math.floor(Math.random() * 4) * 90, 0);
-                //console.log(Math.floor(Math.random() * 4) * 90);
-            });
-            return true;
+  placeTrees() {
+    for (let rIndex = 0; rIndex < this.glbDef.rows; rIndex++) {
+      for (let cIndex = 0; cIndex < this.glbDef.columns; cIndex++) {
+        if (this.treeArray[rIndex][cIndex] == 1) {
+          this.getTree(rIndex * 2.1, 1.8, cIndex * 2.1);
         }
       }
     }
-    return false;
   }
-
-  // checkHouse(rIndex: number, cIndex: number) {
-  //   if (this.movementGrid[rIndex-1][cIndex-1] == 1 
-  //     && this.movementGrid[rIndex-1][cIndex] == 1 
-  //     && this.movementGrid[rIndex][cIndex-1] == 1 
-  //     && this.movementGrid[rIndex][cIndex] == 1
-  //     ) {
-  //       //placeHouse();
-  //       console.log("nice!!");
-  //       return true;
-  //     }
-  //   else if (this.movementGrid[rIndex-1][cIndex] == 1 
-  //     && this.movementGrid[rIndex-1][cIndex+1] == 1 
-  //     && this.movementGrid[rIndex][cIndex] == 1 
-  //     && this.movementGrid[rIndex][cIndex+1] == 1) {
-  //       //placeHouse();
-  //       console.log("nice!!");
-  //       return true;
-  //     }
-  //   // else if (this.movementGrid[rIndex][cIndex-1] == 1 
-  //   //   && this.movementGrid[rIndex][cIndex] == 1 
-  //   //   && this.movementGrid[rIndex+1][cIndex-1] == 1 
-  //   //   && this.movementGrid[rIndex+1][cIndex] == 1) {
-  //   //     //placeHouse();
-  //   //     console.log("nice!!");
-  //   //   }
-  //   else if (this.movementGrid[rIndex][cIndex] == 1 
-  //     && this.movementGrid[rIndex][cIndex+1] == 1 
-  //     && this.movementGrid[rIndex+1][cIndex] == 1 
-  //     && this.movementGrid[rIndex+1][cIndex+1] == 1) {
-  //       //placeHouse();
-  //       console.log("nice!!");
-  //       return true;
-  //     }
-  //   return false;
-  // }
-
-  // checkVertical(check: number): boolean {
-  //   for(let i = 0; i < this.glbDef.columns; ++i){
-  //     if (this.movementGrid[0][i] === check 
-  //         && this.movementGrid[1][i] === check
-  //         && this.movementGrid[2][i] === check
-  //         && this.movementGrid[3][i] === check
-  //     ) {
-  //       return true;
-  //     }
-      
-  //     if (this.movementGrid[1][i] === check 
-  //         && this.movementGrid[2][i] === check
-  //         && this.movementGrid[3][i] === check
-  //         && this.movementGrid[4][i] === check
-  //     ) {
-  //       return true;
-  //     }
-  //   }
-  //   return false;
-  // }
-  
-  // checkHorizontal(check: number): boolean {
-  //   for(let i = 0; i < this.glbDef.rows; ++i){
-  //     if (this.movementGrid[i][0] === check 
-  //         && this.movementGrid[i][1] === check
-  //         && this.movementGrid[i][2] === check
-  //         && this.movementGrid[i][3] === check
-  //     ) {
-  //       return true;
-  //     }
-      
-  //     if (this.movementGrid[i][1] === check 
-  //         && this.movementGrid[i][2] === check
-  //         && this.movementGrid[i][3] === check
-  //         && this.movementGrid[i][4] === check
-  //     ) {
-  //       return true;
-  //     }
-  //   }
-  //   return false;
-  // }
-  
-  // function checkDiagonal1(field, player){
-  //   // exercise for the reader
-  //   return false;
-  // }
-  
-  // function checkDiagonal2(field, player){
-  //   // exercise for the reader
-  //   return false;
-  // }
-  
-  // isWin(check: number) {
-  //   return this.checkVertical(check) || this.checkHorizontal(check);
-   
-  // }
-  
 
   // function to generate random tree
   // tree preferences:
@@ -1301,19 +1308,23 @@ export class SceneLoader {
   //    - Group 1: Mushrooms1 - Mushrooms2 (<40KB)
   //    - Group 2: Mushrooms1 - Mushrooms3 (<50KB)
   //    - Group 3: Mushrooms1 - Mushrooms4 (<60KB)
-  chooseItem(xcoord: number, ycoord: number, zcoord: number, waterTile: boolean) {
+  chooseItem(
+    xcoord: number,
+    ycoord: number,
+    zcoord: number,
+    waterTile: boolean
+  ) {
     let item = "";
-    
+
     let choice;
     if (waterTile) {
       choice = 3;
-    }
-    else {
+    } else {
       choice = Math.floor(Math.random() * 3);
     }
 
-    xcoord += (Math.random() * 1);
-    zcoord += (Math.random() * 1);
+    xcoord += Math.random() * 1;
+    zcoord += Math.random() * 1;
 
     // switch to pick item
     switch (choice) {
@@ -1325,14 +1336,12 @@ export class SceneLoader {
           let mesh = Atlas.grass.get(item + ".glb").createInstance("");
           mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
           mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-        }
-        else if (this.detailLevel == 2) {
+        } else if (this.detailLevel == 2) {
           item += Math.floor(Math.random() * 4) + 1;
           let mesh = Atlas.grass.get(item + ".glb").createInstance("");
           mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
           mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-        }
-        else if (this.detailLevel == 3) {
+        } else if (this.detailLevel == 3) {
           item += Math.floor(Math.random() * 5) + 1;
           let mesh = Atlas.grass.get(item + ".glb").createInstance("");
           mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
@@ -1348,14 +1357,12 @@ export class SceneLoader {
           let mesh = Atlas.tallGrass.get(item + ".glb").createInstance("");
           mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
           mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-        }
-        else if (this.detailLevel == 2) {
+        } else if (this.detailLevel == 2) {
           item += Math.floor(Math.random() * 3) + 1;
           let mesh = Atlas.tallGrass.get(item + ".glb").createInstance("");
           mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
           mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-        }
-        else if (this.detailLevel == 3) {
+        } else if (this.detailLevel == 3) {
           item += Math.floor(Math.random() * 5) + 1;
           let mesh = Atlas.tallGrass.get(item + ".glb").createInstance("");
           mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
@@ -1401,152 +1408,158 @@ export class SceneLoader {
         break;
       }
     }
-  } 
+  }
 
   checkMove() {
     switch (this.directionFacing) {
       //checking 1/2 is checking for water or trees
       case 0: {
-        if (this.movementGrid[this.claraXCoord-1][this.claraYCoord] == 1
-          || this.movementGrid[this.claraXCoord-1][this.claraYCoord] == 2) {            
-            this.playClaraDeathAnimation();
-            this.alive = false;
-           return false;
-         }
-         //check 5 for leaf
-         if(this.movementGrid[this.claraXCoord-1][this.claraYCoord] == 5){
+        if (
+          this.movementGrid[this.claraXCoord - 1][this.claraYCoord] == 1 ||
+          this.movementGrid[this.claraXCoord - 1][this.claraYCoord] == 2
+        ) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
+        //check 5 for leaf
+        if (this.movementGrid[this.claraXCoord - 1][this.claraYCoord] == 5) {
           this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-          this.movementGrid[this.claraXCoord-1][this.claraYCoord] = 4;
-          this.leavesCollected +=1;
+          this.movementGrid[this.claraXCoord - 1][this.claraYCoord] = 4;
+          this.leavesCollected += 1;
           this.claraXCoord -= 1;
-           this.castRayLeaf();
-           return true;
-          
-           
-         }
-         //check 6 is for mushroom
-         if(this.movementGrid[this.claraXCoord-1][this.claraYCoord] == 6){
-           if(this.checkMushroomMove()){
+          this.newLeafAnimation(-1, 0);
+          //this.castRayLeaf();
+          return true;
+        }
+        //check 6 is for mushroom
+        if (this.movementGrid[this.claraXCoord - 1][this.claraYCoord] == 6) {
+          if (this.checkMushroomMove()) {
             this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-            this.movementGrid[this.claraXCoord-1][this.claraYCoord] = 4;
+            this.movementGrid[this.claraXCoord - 1][this.claraYCoord] = 4;
             this.claraXCoord -= 1;
-            this.castRayMushroom(-1, 0);
-             return true;
-           }
-           else{
-             return false;
-           }
-         }
-         this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-         this.movementGrid[this.claraXCoord-1][this.claraYCoord] = 4;
-         this.claraXCoord -= 1;
-         return true;
+            this.newMushroomAnimation(-1, 0);
+            // this.castRayMushroom(-1, 0);
+            return true;
+          } else {
+            return false;
+          }
+        }
+        this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
+        this.movementGrid[this.claraXCoord - 1][this.claraYCoord] = 4;
+        this.claraXCoord -= 1;
+        return true;
       }
       case 1: {
-        if (this.movementGrid[this.claraXCoord][this.claraYCoord+1] == 1
-          || this.movementGrid[this.claraXCoord][this.claraYCoord+1] == 2) {
-            
-            this.playClaraDeathAnimation();
-            this.alive = false;
-           return false;
-         }
-         //check 5 for leaf
-         if(this.movementGrid[this.claraXCoord][this.claraYCoord+1] == 5){
+        if (
+          this.movementGrid[this.claraXCoord][this.claraYCoord + 1] == 1 ||
+          this.movementGrid[this.claraXCoord][this.claraYCoord + 1] == 2
+        ) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
+        //check 5 for leaf
+        if (this.movementGrid[this.claraXCoord][this.claraYCoord + 1] == 5) {
           this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-          this.movementGrid[this.claraXCoord][this.claraYCoord+1] = 4;
-          this.leavesCollected +=1;
+          this.movementGrid[this.claraXCoord][this.claraYCoord + 1] = 4;
+          this.leavesCollected += 1;
           this.claraYCoord += 1;
-          this.castRayLeaf();
+          this.newLeafAnimation(0, 1);
+          //this.castRayLeaf();
           return true;
-          
         }
         //check 6 is for mushroom
-        if(this.movementGrid[this.claraXCoord][this.claraYCoord+1] == 6){
-          if(this.checkMushroomMove()){
+        if (this.movementGrid[this.claraXCoord][this.claraYCoord + 1] == 6) {
+          if (this.checkMushroomMove()) {
             this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-            this.movementGrid[this.claraXCoord][this.claraYCoord+1] = 4;
+            this.movementGrid[this.claraXCoord][this.claraYCoord + 1] = 4;
             this.claraYCoord += 1;
-            this.castRayMushroom(0,1);
+            this.newMushroomAnimation(0, 1);
+            //this.castRayMushroom(0, 1);
             return true;
-          }
-          else{
+          } else {
             return false;
           }
         }
         this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-         this.movementGrid[this.claraXCoord][this.claraYCoord+1] = 4;
-         this.claraYCoord += 1;
-         return true;
+        this.movementGrid[this.claraXCoord][this.claraYCoord + 1] = 4;
+        this.claraYCoord += 1;
+        return true;
       }
       case 2: {
-        if (this.movementGrid[this.claraXCoord+1][this.claraYCoord] == 1
-          || this.movementGrid[this.claraXCoord+1][this.claraYCoord] == 2) {
-            
-            this.playClaraDeathAnimation();
-            this.alive = false;
-           return false;
-         }
-         //check 5 for leaf
-         if(this.movementGrid[this.claraXCoord+1][this.claraYCoord] == 5){
-          this.castRayLeaf();
+        if (
+          this.movementGrid[this.claraXCoord + 1][this.claraYCoord] == 1 ||
+          this.movementGrid[this.claraXCoord + 1][this.claraYCoord] == 2
+        ) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
+        //check 5 for leaf
+        if (this.movementGrid[this.claraXCoord + 1][this.claraYCoord] == 5) {
+          //this.castRayLeaf();
           this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-          this.movementGrid[this.claraXCoord+1][this.claraYCoord] = 4;
-          this.leavesCollected +=1;
+          this.movementGrid[this.claraXCoord + 1][this.claraYCoord] = 4;
+          this.leavesCollected += 1;
           this.claraXCoord += 1;
+          this.newLeafAnimation(1, 0);
           return true;
         }
         //check 6 is for mushroom
-        if(this.movementGrid[this.claraXCoord+1][this.claraYCoord] == 6){
-          if(this.checkMushroomMove()){
+        if (this.movementGrid[this.claraXCoord + 1][this.claraYCoord] == 6) {
+          if (this.checkMushroomMove()) {
             this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-            this.movementGrid[this.claraXCoord+1][this.claraYCoord] = 4;
+            this.movementGrid[this.claraXCoord + 1][this.claraYCoord] = 4;
             this.claraXCoord += 1;
-            this.castRayMushroom(1,0);
+            // this.castRayMushroom(1, 0);
+            this.newMushroomAnimation(1, 0);
             return true;
-          }
-          else{
+          } else {
             return false;
           }
         }
         this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-         this.movementGrid[this.claraXCoord+1][this.claraYCoord] = 4;
-         this.claraXCoord += 1;
-         return true;
+        this.movementGrid[this.claraXCoord + 1][this.claraYCoord] = 4;
+        this.claraXCoord += 1;
+        return true;
       }
       case 3: {
-        if (this.movementGrid[this.claraXCoord][this.claraYCoord-1] == 1
-          || this.movementGrid[this.claraXCoord][this.claraYCoord-1] == 2) {
-            
-            this.playClaraDeathAnimation();
-            this.alive = false;
-           return false;
-         }
-         //check 5 for leaf
-         if(this.movementGrid[this.claraXCoord][this.claraYCoord-1] == 5){
-          this.castRayLeaf();
+        if (
+          this.movementGrid[this.claraXCoord][this.claraYCoord - 1] == 1 ||
+          this.movementGrid[this.claraXCoord][this.claraYCoord - 1] == 2
+        ) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
+        //check 5 for leaf
+        if (this.movementGrid[this.claraXCoord][this.claraYCoord - 1] == 5) {
+          // this.castRayLeaf();
           this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-          this.movementGrid[this.claraXCoord][this.claraYCoord-1] = 4;
-          this.leavesCollected +=1;
+          this.movementGrid[this.claraXCoord][this.claraYCoord - 1] = 4;
+          this.leavesCollected += 1;
           this.claraYCoord -= 1;
+          this.newLeafAnimation(0, -1);
           return true;
         }
         //check 6 is for mushroom
-        if(this.movementGrid[this.claraXCoord][this.claraYCoord-1] == 6){
-          if(this.checkMushroomMove()){
+        if (this.movementGrid[this.claraXCoord][this.claraYCoord - 1] == 6) {
+          if (this.checkMushroomMove()) {
             this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-            this.movementGrid[this.claraXCoord][this.claraYCoord-1] = 4;
+            this.movementGrid[this.claraXCoord][this.claraYCoord - 1] = 4;
             this.claraYCoord -= 1;
-            this.castRayMushroom(0,-1);
+            // this.castRayMushroom(0, -1);
+            this.newMushroomAnimation(0, -1);
             return true;
-          }
-          else{
+          } else {
             return false;
           }
         }
         this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-         this.movementGrid[this.claraXCoord][this.claraYCoord-1] = 4;
-         this.claraYCoord -= 1;
-         return true;
+        this.movementGrid[this.claraXCoord][this.claraYCoord - 1] = 4;
+        this.claraYCoord -= 1;
+        return true;
       }
       default: {
         break;
@@ -1554,69 +1567,89 @@ export class SceneLoader {
     }
   }
 
-  checkMushroomMove(){
+  checkMushroomMove() {
     switch (this.directionFacing) {
       case 0: {
         //check if ahead of mushroom is a tree or water
-        if (this.movementGrid[this.claraXCoord-2][this.claraYCoord] == 1 ||
-           this.movementGrid[this.claraXCoord-2][this.claraYCoord] == 2  ||
-           this.movementGrid[this.claraXCoord-2][this.claraYCoord] == 5  ||
-           this.movementGrid[this.claraXCoord-2][this.claraYCoord] == 6) {
-            console.log("ahead of mushroom is: " + this.movementGrid[this.claraXCoord-2][this.claraYCoord]);
-           return false;
-         }
-         //if true, update grid position of the mushroom and clara, then update clara x/y position
+        if (
+          this.movementGrid[this.claraXCoord - 2][this.claraYCoord] == 1 ||
+          this.movementGrid[this.claraXCoord - 2][this.claraYCoord] == 2 ||
+          this.movementGrid[this.claraXCoord - 2][this.claraYCoord] == 5 ||
+          this.movementGrid[this.claraXCoord - 2][this.claraYCoord] == 6
+        ) {
+          console.log(
+            "ahead of mushroom is: " +
+              this.movementGrid[this.claraXCoord - 2][this.claraYCoord]
+          );
+          return false;
+        }
+        //if true, update grid position of the mushroom and clara, then update clara x/y position
         //  this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
         //  this.movementGrid[this.claraXCoord-1][this.claraYCoord] = 4;
-         this.movementGrid[this.claraXCoord-2][this.claraYCoord] = 6;
-         //this.claraXCoord -= 1;
-         //this.claraXCoord -= 1;
-         return true;
+        this.movementGrid[this.claraXCoord - 2][this.claraYCoord] = 6;
+        //this.claraXCoord -= 1;
+        //this.claraXCoord -= 1;
+        return true;
       }
       case 1: {
-        if (this.movementGrid[this.claraXCoord][this.claraYCoord+2] == 1 ||
-           this.movementGrid[this.claraXCoord][this.claraYCoord+2] == 2  ||
-           this.movementGrid[this.claraXCoord][this.claraYCoord+2] == 5  ||
-           this.movementGrid[this.claraXCoord][this.claraYCoord+2] == 6) {
-            console.log("ahead of mushroom is: " + this.movementGrid[this.claraXCoord][this.claraYCoord+2]);
-           return false;
-         }
-         //this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-         //this.movementGrid[this.claraXCoord][this.claraYCoord+1] = 4;
-         this.movementGrid[this.claraXCoord][this.claraYCoord+2] = 6;
-         //this.claraYCoord += 1;
-         //this.claraYCoord += 1;
-         return true;
+        if (
+          this.movementGrid[this.claraXCoord][this.claraYCoord + 2] == 1 ||
+          this.movementGrid[this.claraXCoord][this.claraYCoord + 2] == 2 ||
+          this.movementGrid[this.claraXCoord][this.claraYCoord + 2] == 5 ||
+          this.movementGrid[this.claraXCoord][this.claraYCoord + 2] == 6
+        ) {
+          console.log(
+            "ahead of mushroom is: " +
+              this.movementGrid[this.claraXCoord][this.claraYCoord + 2]
+          );
+          return false;
+        }
+        //this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
+        //this.movementGrid[this.claraXCoord][this.claraYCoord+1] = 4;
+        this.movementGrid[this.claraXCoord][this.claraYCoord + 2] = 6;
+        //this.claraYCoord += 1;
+        //this.claraYCoord += 1;
+        return true;
       }
       case 2: {
-        if (this.movementGrid[this.claraXCoord+2][this.claraYCoord] == 1 ||
-           this.movementGrid[this.claraXCoord+2][this.claraYCoord] == 2  ||
-           this.movementGrid[this.claraXCoord+2][this.claraYCoord] == 5  ||
-           this.movementGrid[this.claraXCoord+2][this.claraYCoord] == 6) {
-            console.log("ahead of mushroom is: " + this.movementGrid[this.claraXCoord+2][this.claraYCoord]);
-           return false;
-         }
-         //this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-         //this.movementGrid[this.claraXCoord+1][this.claraYCoord] = 4;
-         this.movementGrid[this.claraXCoord+2][this.claraYCoord] = 6;
-         //this.claraXCoord += 1;
-         //this.claraXCoord += 1;
-         return true;
+        if (
+          this.movementGrid[this.claraXCoord + 2][this.claraYCoord] == 1 ||
+          this.movementGrid[this.claraXCoord + 2][this.claraYCoord] == 2 ||
+          this.movementGrid[this.claraXCoord + 2][this.claraYCoord] == 5 ||
+          this.movementGrid[this.claraXCoord + 2][this.claraYCoord] == 6
+        ) {
+          console.log(
+            "ahead of mushroom is: " +
+              this.movementGrid[this.claraXCoord + 2][this.claraYCoord]
+          );
+          return false;
+        }
+        //this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
+        //this.movementGrid[this.claraXCoord+1][this.claraYCoord] = 4;
+        this.movementGrid[this.claraXCoord + 2][this.claraYCoord] = 6;
+        //this.claraXCoord += 1;
+        //this.claraXCoord += 1;
+        return true;
       }
       case 3: {
-        if (this.movementGrid[this.claraXCoord][this.claraYCoord-2] == 1 ||
-           this.movementGrid[this.claraXCoord][this.claraYCoord-2] == 2  ||
-           this.movementGrid[this.claraXCoord][this.claraYCoord-2] == 5  ||
-           this.movementGrid[this.claraXCoord][this.claraYCoord-2] == 6) {
-            console.log("ahead of mushroom is: " + this.movementGrid[this.claraXCoord][this.claraYCoord-2]);
-           return false;
-         }
-         //this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
-         //this.movementGrid[this.claraXCoord][this.claraYCoord-1] = 4;
-         this.movementGrid[this.claraXCoord][this.claraYCoord-2] = 6;
-         //this.claraYCoord -= 1;
-         //this.claraYCoord -= 1;
-         return true;
+        if (
+          this.movementGrid[this.claraXCoord][this.claraYCoord - 2] == 1 ||
+          this.movementGrid[this.claraXCoord][this.claraYCoord - 2] == 2 ||
+          this.movementGrid[this.claraXCoord][this.claraYCoord - 2] == 5 ||
+          this.movementGrid[this.claraXCoord][this.claraYCoord - 2] == 6
+        ) {
+          console.log(
+            "ahead of mushroom is: " +
+              this.movementGrid[this.claraXCoord][this.claraYCoord - 2]
+          );
+          return false;
+        }
+        //this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
+        //this.movementGrid[this.claraXCoord][this.claraYCoord-1] = 4;
+        this.movementGrid[this.claraXCoord][this.claraYCoord - 2] = 6;
+        //this.claraYCoord -= 1;
+        //this.claraYCoord -= 1;
+        return true;
       }
       default: {
         break;
@@ -1625,45 +1658,60 @@ export class SceneLoader {
   }
 
   initialiseClara() {
-    if(this.directionFacing == 0){
+    if (this.directionFacing == 0) {
       console.log("Clara starting direction: " + this.directionFacing);
       this.clara.rotate(BABYLON.Vector3.Up(), -1.5708); //turn clara left
       console.log("Clara starting direction: " + this.directionFacing);
-    } else if(this.directionFacing == 2){
-      this.clara.rotate(BABYLON.Vector3.Up(), 1.5708);  //turn clara right
-    } else if(this.directionFacing == 3){
-      this.clara.rotate(BABYLON.Vector3.Up(), 3.1416);  //turn clara around
+    } else if (this.directionFacing == 2) {
+      this.clara.rotate(BABYLON.Vector3.Up(), 1.5708); //turn clara right
+    } else if (this.directionFacing == 3) {
+      this.clara.rotate(BABYLON.Vector3.Up(), 3.1416); //turn clara around
     }
   }
 
-  async customAnimationFunctionClara(nextPosition){
-    console.log("current framespeed: " + this.currentFrameSpeed); 
-     setTimeout(async () => {
-       var anim =  BABYLON.Animation.CreateAndStartAnimation("anim", 
-                   this.clara, 
-                   "position", 
-                   this.currentFrameSpeed, 
-                   60, 
-                   this.currentPosition,
-                   nextPosition,
-                   //new BABYLON.Vector3(this.currentPosition._x-2.1, this.currentPosition._y, this.currentPosition._z), 
-                   BABYLON.Animation.ANIMATIONLOOPMODE_RELATIVE); 
- 
-       //this.playerAnimator.stop();
-       //this.playerAnimator.start(true, 1, 60, 160); //walk
-       this.playClaraWalkAnimation();
-      // this.playClaraTurnRightAnimation();
-       await anim.waitAsync();
-       this.playClaraIdleAnimation();
-       //this.playerAnimator.stop();
-       //this.playerAnimator.start(true, 1, 0, 58); //idle
-     });
-   }
+  async newLeafAnimation(x: number, z: number) {
+    var mesh = this.leafs[this.claraXCoord][this.claraYCoord];
 
-   claraTurnRightFunction(){
-    if(!this.justMoved){
+    this.leafs[this.claraXCoord][this.claraYCoord] = null;
+
+    var mesh1 = this.leafAnimatorArray[this.claraXCoord][this.claraYCoord];
+
+    mesh1.stop();
+    mesh1.start(true, 1, 150, 300); //idle
+    await delay(this.currentLeafAnimationSpeed);
+    mesh.dispose();
+  }
+
+  async customAnimationFunctionClara(nextPosition) {
+    console.log("current framespeed: " + this.currentFrameSpeed);
+    setTimeout(async () => {
+      var anim = BABYLON.Animation.CreateAndStartAnimation(
+        "anim",
+        this.clara,
+        "position",
+        this.currentFrameSpeed,
+        60,
+        this.currentPosition,
+        nextPosition,
+        //new BABYLON.Vector3(this.currentPosition._x-2.1, this.currentPosition._y, this.currentPosition._z),
+        BABYLON.Animation.ANIMATIONLOOPMODE_RELATIVE
+      );
+
+      //this.playerAnimator.stop();
+      //this.playerAnimator.start(true, 1, 60, 160); //walk
+      this.playClaraWalkAnimation();
+      // this.playClaraTurnRightAnimation();
+      await anim.waitAsync();
+      this.playClaraIdleAnimation();
+      //this.playerAnimator.stop();
+      //this.playerAnimator.start(true, 1, 0, 58); //idle
+    });
+  }
+
+  claraTurnRightFunction() {
+    if (!this.justMoved) {
       this.justMoved = true;
-      setTimeout(() => this.justMoved = false, this.currentTurnSpeed);
+      setTimeout(() => (this.justMoved = false), this.currentTurnSpeed);
 
       // setTimeout(async () => {
 
@@ -1677,92 +1725,102 @@ export class SceneLoader {
 
       // });
 
-
-
       this.clara.rotate(BABYLON.Vector3.Up(), 1.5708);
 
       this.playClaraIdleAnimation();
 
       if (this.directionFacing != 3) {
         this.directionFacing++;
-      }
-      else {
+      } else {
         this.directionFacing = 0;
       }
       console.log("facing = ", this.directionFacing);
-    }
-    else{
+    } else {
       console.log("yo just wait");
     }
-
   }
 
   claraMoveForwardFunction() {
     console.log(this.movementGrid);
-    console.log("before move: " +this.movementGrid);
-    if(!this.justMoved && this.alive){
-      if (this.checkMove() ) {
-        console.log("after move: " +this.movementGrid);
+    console.log("before move: " + this.movementGrid);
+    if (!this.justMoved && this.alive) {
+      if (this.checkMove()) {
+        console.log("after move: " + this.movementGrid);
 
-    //this.currentPosition = this.clara.position;
-    this.justMoved = true;
-    this.currentPosition = this.clara.position;
-    setTimeout(() => this.justMoved = false, this.currentMoveWaitSpeed); //after 1 second, becomes, false, allows the code to continue, prevents button/keys being spammed
+        //this.currentPosition = this.clara.position;
+        this.justMoved = true;
+        this.currentPosition = this.clara.position;
+        setTimeout(() => (this.justMoved = false), this.currentMoveWaitSpeed); //after 1 second, becomes, false, allows the code to continue, prevents button/keys being spammed
 
-    console.log(this.currentPosition);
+        console.log(this.currentPosition);
 
-    var nextPosition;
-    switch(this.directionFacing) {
-      case 0: {
-        nextPosition = new BABYLON.Vector3(this.currentPosition._x-2.1, this.currentPosition._y, this.currentPosition._z);
+        var nextPosition;
+        switch (this.directionFacing) {
+          case 0: {
+            nextPosition = new BABYLON.Vector3(
+              this.currentPosition._x - 2.1,
+              this.currentPosition._y,
+              this.currentPosition._z
+            );
 
-        //this.clara.movePOV(0,0,-2.1);
-        //this.clara.movePOV(0,0,2.1);
-        break;
+            //this.clara.movePOV(0,0,-2.1);
+            //this.clara.movePOV(0,0,2.1);
+            break;
+          }
+          case 1: {
+            nextPosition = new BABYLON.Vector3(
+              this.currentPosition._x,
+              this.currentPosition._y,
+              this.currentPosition._z + 2.1
+            );
+            //this.clara.movePOV(2.1,0,0);
+            //this.clara.movePOV(0,0,2.1);
+            break;
+          }
+          case 2: {
+            nextPosition = new BABYLON.Vector3(
+              this.currentPosition._x + 2.1,
+              this.currentPosition._y,
+              this.currentPosition._z
+            );
+            //this.clara.movePOV(0,0,2.1);
+            break;
+          }
+          case 3: {
+            nextPosition = new BABYLON.Vector3(
+              this.currentPosition._x,
+              this.currentPosition._y,
+              this.currentPosition._z - 2.1
+            );
+            // this.clara.movePOV(0,0,-2.1);
+            //this.clara.movePOV(0,0,2.1);
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+        var anim = this.customAnimationFunctionClara(nextPosition);
+      } else {
+        console.log("current postion is: " + this.currentPosition);
+        console.log("invalid move!!!");
       }
-      case 1: {
-        nextPosition = new BABYLON.Vector3(this.currentPosition._x, this.currentPosition._y, this.currentPosition._z+2.1);
-        //this.clara.movePOV(2.1,0,0);
-        //this.clara.movePOV(0,0,2.1);
-        break;
-      }
-      case 2: {
-        nextPosition = new BABYLON.Vector3(this.currentPosition._x+2.1, this.currentPosition._y, this.currentPosition._z);
-        //this.clara.movePOV(0,0,2.1);
-        break;
-      }
-      case 3: {
-        nextPosition = new BABYLON.Vector3(this.currentPosition._x, this.currentPosition._y, this.currentPosition._z-2.1);
-      // this.clara.movePOV(0,0,-2.1);
-        //this.clara.movePOV(0,0,2.1);
-        break;
-      }
-      default: {
-        break;
-      }
-    }
-      var anim =  this.customAnimationFunctionClara(nextPosition);
-    }
-    else {
-      console.log("current postion is: " + this.currentPosition);
-      console.log("invalid move!!!");
-    }
-    }
-    else{
+    } else {
       console.log("yo can u just wait??");
     }
   }
 
-  playClaraIdleAnimation(){
+  playClaraIdleAnimation() {
     this.playerAnimator.stop();
-      this.playerAnimator.start(true, 1, 0, 60); //idle
-  }
-  playClaraWalkAnimation(){
-    this.playerAnimator.stop();
-      this.playerAnimator.start(true, 1, 60, 156); //walk
+    this.playerAnimator.start(true, 1, 0, 60); //idle
   }
 
-  playClaraDeathAnimation = async() => {
+  playClaraWalkAnimation() {
+    this.playerAnimator.stop();
+    this.playerAnimator.start(true, 1, 60, 156); //walk
+  }
+
+  playClaraDeathAnimation = async () => {
     console.log("about to wait " + this.currentDeathSpeed + " milli-seconds");
     this.playerAnimator.stop();
     this.playerAnimator.start(true, 1, 320, 366); //death
@@ -1772,72 +1830,74 @@ export class SceneLoader {
     //attempting to make her stop at the upside-down position
     this.playerAnimator.stop();
     this.playerAnimator.start(true, 1, 360, 366); //death
+  };
+
+  animateRandomMesh(randoMesh: BABYLON.AbstractMesh, x: number, z: number) {
+    var anim = BABYLON.Animation.CreateAndStartAnimation(
+      "anim",
+      randoMesh,
+      "position",
+      this.currentFrameSpeed,
+      60,
+      randoMesh.position,
+      //nextPosition,
+      new BABYLON.Vector3(
+        randoMesh.position._x + x,
+        randoMesh.position._y,
+        randoMesh.position._z + z
+      ),
+      BABYLON.Animation.ANIMATIONLOOPMODE_RELATIVE
+    );
   }
 
-  animateRandomMesh(randoMesh: BABYLON.AbstractMesh, x:number, z:number){
-    var anim =  BABYLON.Animation.CreateAndStartAnimation("anim", 
-    randoMesh, 
-    "position", 
-    this.currentFrameSpeed, 
-    60, 
-    randoMesh.position,
-    //nextPosition,
-    new BABYLON.Vector3(randoMesh.position._x+x, randoMesh.position._y, randoMesh.position._z+z), 
-    BABYLON.Animation.ANIMATIONLOOPMODE_RELATIVE); 
+  newMushroomAnimation(x: number, z: number) {
+    var newx = x * 2.1;
+    var newz = z * 2.1;
+
+    var shroom = this.mushrooms[this.claraXCoord][this.claraYCoord];
+    this.mushrooms[this.claraXCoord][this.claraYCoord] = null;
+    this.mushrooms[this.claraXCoord + x][this.claraYCoord + z] = shroom;
+
+    var anim = BABYLON.Animation.CreateAndStartAnimation(
+      "anim",
+      shroom,
+      "position",
+      this.currentFrameSpeed,
+      60,
+      shroom.position,
+      //nextPosition,
+      new BABYLON.Vector3(
+        shroom.position._x + newx,
+        shroom.position._y,
+        shroom.position._z + newz
+      ),
+      BABYLON.Animation.ANIMATIONLOOPMODE_RELATIVE
+    );
   }
 
-  playClaraTurnRightAnimation(){
+  playClaraTurnRightAnimation() {
     this.playerAnimator.stop();
     //const animWheel = new BABYLON.Animation("anim", "rotation.y", 30, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
     //this.scene.beginAnimation(this.clara, 120, 156, true);
     this.playerAnimator.start(true, 1, 240, 312); //turn right
   }
 
-  playClaraTurnLeftAnimation(){
+  playClaraTurnLeftAnimation() {
     this.playerAnimator.stop();
-      this.playerAnimator.start(true, 1, 160, 232); //turn left
+    this.playerAnimator.start(true, 1, 160, 232); //turn left
   }
 
-  castRayMushroom(x:number, z:number) {
-    x = x*2.1;
-    z = z*2.1;
+  castRayMushroom(x: number, z: number) {
+    x = x * 2.1;
+    z = z * 2.1;
     //below works, but when want to move the origin of the ray, moves clara herself
-   //var origin = this.clara.position;
-   //below breaks movement
-   //var origin = new BABYLON.Vector3(this.clara.position.x, this.clara.position.y+0.1, this.clara.position.z);
-   var origin = this.clara.position;
-   origin.y +=0.1;
-
-   var forward = new BABYLON.Vector3(0,0,1);
-   forward = this.vecToLocal(forward, this.clara);
-
-   var direction = forward.subtract(origin);
-   direction = BABYLON.Vector3.Normalize(direction);
-
-   var length = 100;
-
-   var ray = new BABYLON.Ray(origin, direction, length);
-
-   //below just generates a line to show where the ray is casting
-   // let rayHelper = new BABYLON.RayHelper(ray);
-   // rayHelper.show(this.scene);
-
-   var hit = this.scene.pickWithRay(ray);
-   origin.y -= 0.1;
-
-   if (hit.pickedMesh){
-     //hit.pickedMesh.scaling.y += 0.5;
-     this.animateRandomMesh(hit.pickedMesh, x, z);
-
-   // hit.pickedMesh.scaling.y += 0.5;
-  }
-  }
-
-  castRayLeaf(){
+    //var origin = this.clara.position;
+    //below breaks movement
+    //var origin = new BABYLON.Vector3(this.clara.position.x, this.clara.position.y+0.1, this.clara.position.z);
     var origin = this.clara.position;
-    origin.y +=0.1; 
+    origin.y += 0.1;
 
-    var forward = new BABYLON.Vector3(0,0,1);
+    var forward = new BABYLON.Vector3(0, 0, 1);
     forward = this.vecToLocal(forward, this.clara);
 
     var direction = forward.subtract(origin);
@@ -1852,37 +1912,68 @@ export class SceneLoader {
     // rayHelper.show(this.scene);
 
     var hit = this.scene.pickWithRay(ray);
-    origin.y -=0.1;
+    origin.y -= 0.1;
 
-    if (hit.pickedMesh){
+    if (hit.pickedMesh) {
+      //hit.pickedMesh.scaling.y += 0.5;
+      this.animateRandomMesh(hit.pickedMesh, x, z);
+
+      // hit.pickedMesh.scaling.y += 0.5;
+    }
+  }
+
+  castRayLeaf() {
+    var origin = this.clara.position;
+    origin.y += 0.1;
+
+    var forward = new BABYLON.Vector3(0, 0, 1);
+    forward = this.vecToLocal(forward, this.clara);
+
+    var direction = forward.subtract(origin);
+    direction = BABYLON.Vector3.Normalize(direction);
+
+    var length = 100;
+
+    var ray = new BABYLON.Ray(origin, direction, length);
+
+    //below just generates a line to show where the ray is casting
+    // let rayHelper = new BABYLON.RayHelper(ray);
+    // rayHelper.show(this.scene);
+
+    var hit = this.scene.pickWithRay(ray);
+    origin.y -= 0.1;
+
+    if (hit.pickedMesh) {
       setTimeout(async () => {
         var anim = this.animateLeaf(hit.pickedMesh);
         await anim;
         //hit.pickedMesh.dispose();
       });
 
-
-
       //hit.pickedMesh.scaling.y += 0.5;
       //now use the animation loaded into the mesh
     }
-
   }
 
-  animateLeaf(randoMesh){
-    var anim =  BABYLON.Animation.CreateAndStartAnimation("anim", 
-    randoMesh, 
-    "position", 
-    this.currentFrameSpeed, 
-    60, 
-    randoMesh.position,
-    //nextPosition,
-    new BABYLON.Vector3(randoMesh.position._x, randoMesh.position._y+5, randoMesh.position._z), 
-    BABYLON.Animation.ANIMATIONLOOPMODE_RELATIVE); 
-
+  animateLeaf(randoMesh) {
+    var anim = BABYLON.Animation.CreateAndStartAnimation(
+      "anim",
+      randoMesh,
+      "position",
+      this.currentFrameSpeed,
+      60,
+      randoMesh.position,
+      //nextPosition,
+      new BABYLON.Vector3(
+        randoMesh.position._x,
+        randoMesh.position._y + 5,
+        randoMesh.position._z
+      ),
+      BABYLON.Animation.ANIMATIONLOOPMODE_RELATIVE
+    );
   }
 
-  vecToLocal(vector, mesh){
+  vecToLocal(vector, mesh) {
     var m = mesh.getWorldMatrix();
     var v = BABYLON.Vector3.TransformCoordinates(vector, m);
     return v;
@@ -1893,7 +1984,7 @@ export class SceneLoader {
     // iRows = rows of the island (min 2, max 6)
     // iCols = columns of the island (min 2, max 6)
     let iRows = Math.floor(Math.random() * (6 - 2)) + 2;
-    let iCols = Math.floor(Math.random() * (6 - 2)) + 2; 
+    let iCols = Math.floor(Math.random() * (6 - 2)) + 2;
 
     // island generation loop
     for (let iRowsIndex = 0; iRowsIndex < iRows; iRowsIndex++) {
@@ -1904,9 +1995,9 @@ export class SceneLoader {
         if (tileType == 3) {
           let tile = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
           tile.position = new BABYLON.Vector3(
-            (iRowsIndex * 2.1) + x,
+            iRowsIndex * 2.1 + x,
             0.9 + y,
-            (iColsIndex * 2.1) + z
+            iColsIndex * 2.1 + z
           );
           console.log(0.9 * y);
           console.log(y + 0.9);
@@ -1914,60 +2005,83 @@ export class SceneLoader {
         }
         // else place either dark or light grass
         else {
-          let tile = Atlas.topTiles.get("GrassTop" + tileType + ".glb").createInstance("");
-          tile.position = new BABYLON.Vector3((iRowsIndex * 2.1) + x, y, (iColsIndex * 2.1) + z);
+          let tile = Atlas.topTiles
+            .get("GrassTop" + tileType + ".glb")
+            .createInstance("");
+          tile.position = new BABYLON.Vector3(
+            iRowsIndex * 2.1 + x,
+            y,
+            iColsIndex * 2.1 + z
+          );
         }
         // if dark grass, place tree
         if (tileType == 1) {
-          this.getTree((iRowsIndex * 2.1) + x, 1.6 + y, (iColsIndex * 2.1) + z);
+          this.getTree(iRowsIndex * 2.1 + x, 1.6 + y, iColsIndex * 2.1 + z);
         }
 
         // if water tile, place water item
         if (tileType == 3) {
           if (globalThis.detailLevel == 3) {
-            this.chooseItem((iRowsIndex * 2.1) + x, 1 + y, (iColsIndex * 2.1) + z, true);
-          }
-          else if (globalThis.detailLevel == 2) {
-            if ((Math.floor(Math.random() * 10)) + 1 < 5) {
-            this.chooseItem((iRowsIndex * 2.1) + x, 1 + y, (iColsIndex * 2.1) + z, true);
+            this.chooseItem(
+              iRowsIndex * 2.1 + x,
+              1 + y,
+              iColsIndex * 2.1 + z,
+              true
+            );
+          } else if (globalThis.detailLevel == 2) {
+            if (Math.floor(Math.random() * 10) + 1 < 5) {
+              this.chooseItem(
+                iRowsIndex * 2.1 + x,
+                1 + y,
+                iColsIndex * 2.1 + z,
+                true
+              );
             }
           }
         }
         // if grass, place regular item
         else {
           if (this.detailLevel == 3) {
-            this.chooseItem((iRowsIndex * 2.1) + x, 1 + y, (iColsIndex * 2.1) + z, false);
-          }
-          else if (this.detailLevel == 2) {
-            if ((Math.floor(Math.random() * 10)) + 1 < 5) {
-              this.chooseItem((iRowsIndex * 2.1) + x, 1 + y, (iColsIndex * 2.1) + z, false);
+            this.chooseItem(
+              iRowsIndex * 2.1 + x,
+              1 + y,
+              iColsIndex * 2.1 + z,
+              false
+            );
+          } else if (this.detailLevel == 2) {
+            if (Math.floor(Math.random() * 10) + 1 < 5) {
+              this.chooseItem(
+                iRowsIndex * 2.1 + x,
+                1 + y,
+                iColsIndex * 2.1 + z,
+                false
+              );
             }
           }
         }
-
       }
     }
 
     // place island bottom and scale
-    BABYLON.SceneLoader.ImportMesh("", "./", "island.glb", this.scene, function (meshes) {
-      meshes.forEach((mesh) => {
-        if (mesh.material) {
-          mesh.material.needDepthPrePass = true;
-        }
-      });
-      let root = meshes[0];
-      let islandX = (((iRows * 2.1) - 2.1) / 2) + x;
-      let islandY = (((iCols * 2.1) - 2.1) / 2) + z;
-      root.position = new BABYLON.Vector3(islandX, 1.5 + y, islandY);
-      root.scaling = new BABYLON.Vector3(iRows / 4.5, 1.8, iCols / 4.5);
-    });
-
+    let width = (iRows * 2.1 - 2.1) / 2 + x;
+    let length = (iCols * 2.1 - 2.1) / 2 + z;
+    this.importMesh(
+      "Island",
+      width,
+      1.5 + y,
+      length,
+      0,
+      true,
+      iRows / 4.5,
+      1.8,
+      iCols / 4.5
+    );
   }
 
   createFog() {
     this.scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
-    this.scene.fogStart = 40.0
-    this.scene.fogEnd = 60.0
-    this.scene.fogColor = new BABYLON.Color3(0.8,0.8,0.8); 
+    this.scene.fogStart = 40.0;
+    this.scene.fogEnd = 60.0;
+    this.scene.fogColor = new BABYLON.Color3(0.8, 0.8, 0.8);
   }
 }

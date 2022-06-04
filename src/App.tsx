@@ -4,7 +4,7 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
 import "./App.css";
 import { SceneLoader } from "./SceneLoader";
-import { scene } from "./scenes/scene1";
+import { scene } from "./scenes/scene6";
 
 // DOCUMENTATION
 // "scene" contains and array of tile definitions
@@ -21,7 +21,6 @@ function App() {
     sceneLoader.initCanvas(ref.current).then(() => {
       sceneLoader.loadScene(scene);
     });
-
   }, []);
 
   return (
