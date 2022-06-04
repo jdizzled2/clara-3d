@@ -254,7 +254,7 @@ export class SceneLoader {
       });
 
       // create and setup cam2 button
-      var cam2 = GUI.Button.CreateImageOnlyButton("side-view.png", "/");
+      var cam2 = GUI.Button.CreateImageOnlyButton("cam2", "./side-view.png");
       cam2.width = "60px";
       cam2.height = "50px";
       cam2.color = "transparent";
