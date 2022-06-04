@@ -254,7 +254,7 @@ export class SceneLoader {
       });
 
       // create and setup cam2 button
-      var cam2 = GUI.Button.CreateImageOnlyButton("cam2", "./side-view.png");
+      var cam2 = GUI.Button.CreateImageOnlyButton("cam2", "/side-view.png");
       cam2.width = "60px";
       cam2.height = "50px";
       cam2.color = "transparent";
@@ -867,7 +867,7 @@ export class SceneLoader {
               case 4: {
                 BABYLON.SceneLoader.ImportMesh(
                   "",
-                  "./",
+                  "/",
                   "Clara.glb",
                   this.scene,
                   (meshes, unused1, unused2, ags) => {
@@ -908,7 +908,7 @@ export class SceneLoader {
                 this.movementGrid[rowIndex][columnIndex] = 5;
                 BABYLON.SceneLoader.ImportMesh(
                   "",
-                  "./",
+                  "/",
                   "Leaf.glb",
                   this.scene,
                   (meshes, ps, skeletons, ags) => {
