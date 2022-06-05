@@ -241,7 +241,7 @@ export class SceneLoader {
       //    - cam3 = angle 3 (limited-free range)
 
       // create and setup cam1 button
-      var cam1 = GUI.Button.CreateImageOnlyButton("cam1", "top-down.png");
+      var cam1 = GUI.Button.CreateImageOnlyButton("cam1", "/top-down.png");
       cam1.width = "60px";
       cam1.height = "50px";
       cam1.color = "transparent";
@@ -267,7 +267,7 @@ export class SceneLoader {
       });
 
       // create and setup cam3 button
-      var cam3 = GUI.Button.CreateImageOnlyButton("cam3", "free-view.png");
+      var cam3 = GUI.Button.CreateImageOnlyButton("cam3", "/free-view.png");
       cam3.width = "60px";
       cam3.height = "50px";
       cam3.color = "transparent";
@@ -336,7 +336,7 @@ export class SceneLoader {
       });
 
       // create and setup reload button
-      var reloadBtn = GUI.Button.CreateImageOnlyButton("reload", "reload.png");
+      var reloadBtn = GUI.Button.CreateImageOnlyButton("reload", "/reload.png");
       reloadBtn.height = "25px";
       reloadBtn.width = "35px";
       reloadBtn.paddingLeft = "10px";
@@ -366,7 +366,7 @@ export class SceneLoader {
       // create and setup half speed button
       let halfSpeedBtn = GUI.Button.CreateImageOnlyButton(
         "half",
-        "halfSpeed.png"
+        "/halfSpeed.png"
       );
       halfSpeedBtn.width = "50px";
       halfSpeedBtn.height = "30px";
@@ -380,7 +380,7 @@ export class SceneLoader {
       // create and setup normal speed button
       let defaultSpeedBtn = GUI.Button.CreateImageOnlyButton(
         "default",
-        "icons/defaultSpeed.png"
+        "/defaultSpeed.png"
       );
       defaultSpeedBtn.width = "50px";
       defaultSpeedBtn.height = "30px";
@@ -410,7 +410,7 @@ export class SceneLoader {
       // create and setup fast speed button
       let fastSpeedBtn = GUI.Button.CreateImageOnlyButton(
         "triple",
-        "fastSpeed.png"
+        "/fastSpeed.png"
       );
       fastSpeedBtn.width = "50px";
       fastSpeedBtn.height = "30px";
@@ -557,6 +557,10 @@ export class SceneLoader {
     this.camera.target.x = rows;
     this.camera.target.y = rows - columns;
     this.camera.target.z = columns;
+    
+    this.camera.position.x = rows;
+    this.camera.position.y = columns*2.1;
+    this.camera.position.z = columns;
 
     // this.camera.target.x = rows + (rows/2.1);
     // this.camera.target.y = columns - (columns/2.1);
@@ -612,7 +616,7 @@ export class SceneLoader {
                 1000,
                 this.scene
               );
-              waterParticles.particleTexture = new BABYLON.Texture("spray.png");
+              waterParticles.particleTexture = new BABYLON.Texture("Spray.png");
               waterParticles.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1,
                 0,
@@ -646,7 +650,7 @@ export class SceneLoader {
                 this.scene
               ); //creates the particle system
 
-              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+              particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
 
               particleSys.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1 - 1.15,
@@ -671,7 +675,7 @@ export class SceneLoader {
                   this.scene
                 ); //creates the particle system
 
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+                particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
 
                 particleSys.emitter = new BABYLON.Vector3(
                   rowIndex * 2.1 - 1.15,
@@ -702,7 +706,7 @@ export class SceneLoader {
                 1000,
                 this.scene
               ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+              particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
               particleSys.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1 + 1.15,
                 -0.1,
@@ -727,7 +731,7 @@ export class SceneLoader {
                   1000,
                   this.scene
                 ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+                particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
                 particleSys.emitter = new BABYLON.Vector3(
                   rowIndex * 2.1 + 1.15,
                   -0.1 - gap,
@@ -757,7 +761,7 @@ export class SceneLoader {
                 1000,
                 this.scene
               ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+              particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
               particleSys.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1,
                 -0.1,
@@ -782,7 +786,7 @@ export class SceneLoader {
                   1000,
                   this.scene
                 ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+                particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
                 particleSys.emitter = new BABYLON.Vector3(
                   rowIndex * 2.1,
                   -0.1 - gap,
@@ -810,7 +814,7 @@ export class SceneLoader {
                 1000,
                 this.scene
               ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+              particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
               particleSys.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1,
                 -0.1,
@@ -837,7 +841,7 @@ export class SceneLoader {
                   1000,
                   this.scene
                 ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
+                particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
                 particleSys.emitter = new BABYLON.Vector3(
                   rowIndex * 2.1,
                   -0.1 - gap,
@@ -1090,7 +1094,7 @@ export class SceneLoader {
     if (this.detailLevel == 3) {
       for (let i = 0; i < 10; i++) {
         // get random x value (pos or neg multiple of rows)
-        let x = rows * (Math.random() * 10) + 6;
+        let x = rows * ((Math.random() * 10) + 6);
         x *= Math.round(Math.random()) ? 1 : -1;
 
         // get random y value (between -10 to 10)
@@ -1098,7 +1102,7 @@ export class SceneLoader {
         y *= Math.round(Math.random()) ? 1 : -1;
 
         // get random z value (pos or neg multiple of columns)
-        let z = columns * (Math.random() * 10) + 6;
+        let z = columns * ((Math.random() * 10) + 6);
         z *= Math.round(Math.random()) ? 1 : -1;
 
         // call create island func
@@ -1109,7 +1113,7 @@ export class SceneLoader {
     else if (this.detailLevel == 2) {
       for (let i = 0; i < 5; i++) {
         // get random x value (pos or neg multiple of rows)
-        let x = rows * (Math.random() * 10) + 6;
+        let x = rows * ((Math.random() * 10) + 6);
         x *= Math.round(Math.random()) ? 1 : -1;
 
         // get random y value (between -10 to 10)
@@ -1117,7 +1121,7 @@ export class SceneLoader {
         y *= Math.round(Math.random()) ? 1 : -1;
 
         // get random z value (pos or neg multiple of columns)
-        let z = columns * (Math.random() * 10) + 6;
+        let z = columns * ((Math.random() * 10) + 6);
         z *= Math.round(Math.random()) ? 1 : -1;
 
         // call create island func
@@ -1830,6 +1834,7 @@ export class SceneLoader {
     //attempting to make her stop at the upside-down position
     this.playerAnimator.stop();
     this.playerAnimator.start(true, 1, 360, 366); //death
+    this.playerDied();
   };
 
   animateRandomMesh(randoMesh: BABYLON.AbstractMesh, x: number, z: number) {
@@ -2083,5 +2088,11 @@ export class SceneLoader {
     this.scene.fogStart = 40.0;
     this.scene.fogEnd = 60.0;
     this.scene.fogColor = new BABYLON.Color3(0.8, 0.8, 0.8);
+  }
+
+  playerDied(){
+    document.getElementById("yo").style.display = "block";
+    document.getElementById("yo").style.color = "red";
+
   }
 }
