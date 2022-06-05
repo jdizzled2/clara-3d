@@ -26,7 +26,9 @@ function App() {
   return (
     <div className="App" style={{ width: "100%", height: "100%" }}>
       <canvas ref={ref} style={{ width: "100%", height: "100%" }} />
-      <h1 id="yo" className="box stack_top"  >YOU DIED</h1>
+      <h1 id="yo" className="box stack_top">
+        YOU DIED
+      </h1>
     </div>
   );
 }

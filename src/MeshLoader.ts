@@ -5,7 +5,6 @@ export const Atlas = {
   trees: new Map<string, BABYLON.Mesh>(),
   spaceRocks: new Map<string, BABYLON.Mesh>(), //NEWW !!!!!!!
 
-
   NFOS: new Map<string, BABYLON.Mesh>(),
 
   grass: new Map<string, BABYLON.Mesh>(),
@@ -13,16 +12,12 @@ export const Atlas = {
   stones: new Map<string, BABYLON.Mesh>(),
   mushrooms: new Map<string, BABYLON.Mesh>(),
   leaves: new Map<string, BABYLON.Mesh>(),
-  towers: new Map<string, BABYLON.Mesh>()
+  towers: new Map<string, BABYLON.Mesh>(),
   // etc, lots
 };
 
 let tiles: { [index: string]: string[] } = {
-  topTiles: [
-    "GrassTop1.glb", 
-    "GrassTop2.glb",
-    "WaterTop.glb",
-  ],
+  topTiles: ["GrassTop1.glb", "GrassTop2.glb", "WaterTop.glb"],
   trees: [
     "Tree1.glb",
     "Tree2.glb",
@@ -63,10 +58,7 @@ let tiles: { [index: string]: string[] } = {
     "TallGrass4.glb",
     "TallGrass5.glb",
   ],
-  stones: [
-    "Stones1.glb",
-    "Stones2.glb",
-  ],
+  stones: ["Stones1.glb", "Stones2.glb"],
   mushrooms: [
     "Mushrooms1.glb",
     "Mushrooms2.glb",
@@ -74,11 +66,7 @@ let tiles: { [index: string]: string[] } = {
     "Mushrooms4.glb",
   ],
   leaves: [],
-  towers: [
-    "Tower1.glb",
-    "Tower2.glb",
-    "Tower3.glb",
-  ],
+  towers: ["Tower1.glb", "Tower2.glb", "Tower3.glb"],
 };
 
 export function preloadMeshes(assetsManager: BABYLON.AssetsManager) {

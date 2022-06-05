@@ -228,7 +228,8 @@ export class SceneLoader {
       cameraHeading.fontSize = "20";
       cameraHeading.fontWeight = "bold";
       cameraHeading.paddingRight = "20px";
-      cameraHeading.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+      cameraHeading.horizontalAlignment =
+        GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
       cameraHeading.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
 
       // adds headings to gui
@@ -557,9 +558,9 @@ export class SceneLoader {
     this.camera.target.x = rows;
     this.camera.target.y = rows - columns;
     this.camera.target.z = columns;
-    
+
     this.camera.position.x = rows;
-    this.camera.position.y = columns*2.1;
+    this.camera.position.y = columns * 2.1;
     this.camera.position.z = columns;
 
     // this.camera.target.x = rows + (rows/2.1);
@@ -869,7 +870,10 @@ export class SceneLoader {
             );
             switch (existingTile.tid) {
               case 4: {
-                BABYLON.SceneLoader.ImportMesh("", "/", "Clara.glb",
+                BABYLON.SceneLoader.ImportMesh(
+                  "",
+                  "/",
+                  "Clara.glb",
                   this.scene,
                   (meshes, unused1, unused2, ags) => {
                     meshes.forEach((mesh) => {
@@ -907,7 +911,10 @@ export class SceneLoader {
                 // leaf
 
                 this.movementGrid[rowIndex][columnIndex] = 5;
-                BABYLON.SceneLoader.ImportMesh("", "/", "Leaf.glb",
+                BABYLON.SceneLoader.ImportMesh(
+                  "",
+                  "/",
+                  "Leaf.glb",
                   this.scene,
                   (meshes, ps, skeletons, ags) => {
                     meshes.forEach((mesh) => {
@@ -1088,7 +1095,7 @@ export class SceneLoader {
     if (this.detailLevel == 3) {
       for (let i = 0; i < 10; i++) {
         // get random x value (pos or neg multiple of rows)
-        let x = rows * ((Math.random() * 10) + 6);
+        let x = rows * (Math.random() * 10 + 6);
         x *= Math.round(Math.random()) ? 1 : -1;
 
         // get random y value (between -10 to 10)
@@ -1096,7 +1103,7 @@ export class SceneLoader {
         y *= Math.round(Math.random()) ? 1 : -1;
 
         // get random z value (pos or neg multiple of columns)
-        let z = columns * ((Math.random() * 10) + 6);
+        let z = columns * (Math.random() * 10 + 6);
         z *= Math.round(Math.random()) ? 1 : -1;
 
         // call create island func
@@ -1107,7 +1114,7 @@ export class SceneLoader {
     else if (this.detailLevel == 2) {
       for (let i = 0; i < 5; i++) {
         // get random x value (pos or neg multiple of rows)
-        let x = rows * ((Math.random() * 10) + 6);
+        let x = rows * (Math.random() * 10 + 6);
         x *= Math.round(Math.random()) ? 1 : -1;
 
         // get random y value (between -10 to 10)
@@ -1115,7 +1122,7 @@ export class SceneLoader {
         y *= Math.round(Math.random()) ? 1 : -1;
 
         // get random z value (pos or neg multiple of columns)
-        let z = columns * ((Math.random() * 10) + 6);
+        let z = columns * (Math.random() * 10 + 6);
         z *= Math.round(Math.random()) ? 1 : -1;
 
         // call create island func
@@ -2084,9 +2091,8 @@ export class SceneLoader {
     this.scene.fogColor = new BABYLON.Color3(0.8, 0.8, 0.8);
   }
 
-  playerDied(){
+  playerDied() {
     document.getElementById("yo").style.display = "block";
     document.getElementById("yo").style.color = "red";
-
   }
 }
