@@ -13,8 +13,7 @@ export const Atlas = {
   stones: new Map<string, BABYLON.Mesh>(),
   mushrooms: new Map<string, BABYLON.Mesh>(),
   leaves: new Map<string, BABYLON.Mesh>(),
-  towers: new Map<string, BABYLON.Mesh>(),
-  claras: new Map<string, BABYLON.Mesh>(),
+  towers: new Map<string, BABYLON.Mesh>()
   // etc, lots
 };
 
@@ -79,9 +78,6 @@ let tiles: { [index: string]: string[] } = {
     "Tower1.glb",
     "Tower2.glb",
     "Tower3.glb",
-  ],
-  claras: [
-    "clara.glb",
   ],
 };
 

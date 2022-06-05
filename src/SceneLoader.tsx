@@ -869,7 +869,7 @@ export class SceneLoader {
             );
             switch (existingTile.tid) {
               case 4: {
-                BABYLON.SceneLoader.ImportMesh("", "./", "Clara.glb",
+                BABYLON.SceneLoader.ImportMesh("", "/", "Clara.glb",
                   this.scene,
                   (meshes, unused1, unused2, ags) => {
                     meshes.forEach((mesh) => {
