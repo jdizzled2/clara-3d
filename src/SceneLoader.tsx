@@ -616,7 +616,7 @@ export class SceneLoader {
                 1000,
                 this.scene
               );
-              waterParticles.particleTexture = new BABYLON.Texture("Spray.png");
+              waterParticles.particleTexture = new BABYLON.Texture("/Spray.png");
               waterParticles.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1,
                 0,
@@ -650,7 +650,7 @@ export class SceneLoader {
                 this.scene
               ); //creates the particle system
 
-              particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
+              particleSys.particleTexture = new BABYLON.Texture("/Spray.png"); //texture of each particle
 
               particleSys.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1 - 1.15,
@@ -675,7 +675,7 @@ export class SceneLoader {
                   this.scene
                 ); //creates the particle system
 
-                particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
+                particleSys.particleTexture = new BABYLON.Texture("/Spray.png"); //texture of each particle
 
                 particleSys.emitter = new BABYLON.Vector3(
                   rowIndex * 2.1 - 1.15,
@@ -706,7 +706,7 @@ export class SceneLoader {
                 1000,
                 this.scene
               ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
+              particleSys.particleTexture = new BABYLON.Texture("/Spray.png"); //texture of each particle
               particleSys.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1 + 1.15,
                 -0.1,
@@ -731,7 +731,7 @@ export class SceneLoader {
                   1000,
                   this.scene
                 ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
+                particleSys.particleTexture = new BABYLON.Texture("/Spray.png"); //texture of each particle
                 particleSys.emitter = new BABYLON.Vector3(
                   rowIndex * 2.1 + 1.15,
                   -0.1 - gap,
@@ -761,7 +761,7 @@ export class SceneLoader {
                 1000,
                 this.scene
               ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
+              particleSys.particleTexture = new BABYLON.Texture("/Spray.png"); //texture of each particle
               particleSys.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1,
                 -0.1,
@@ -786,7 +786,7 @@ export class SceneLoader {
                   1000,
                   this.scene
                 ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
+                particleSys.particleTexture = new BABYLON.Texture("/Spray.png"); //texture of each particle
                 particleSys.emitter = new BABYLON.Vector3(
                   rowIndex * 2.1,
                   -0.1 - gap,
@@ -814,7 +814,7 @@ export class SceneLoader {
                 1000,
                 this.scene
               ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
+              particleSys.particleTexture = new BABYLON.Texture("/Spray.png"); //texture of each particle
               particleSys.emitter = new BABYLON.Vector3(
                 rowIndex * 2.1,
                 -0.1,
@@ -841,7 +841,7 @@ export class SceneLoader {
                   1000,
                   this.scene
                 ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("Spray.png"); //texture of each particle
+                particleSys.particleTexture = new BABYLON.Texture("/Spray.png"); //texture of each particle
                 particleSys.emitter = new BABYLON.Vector3(
                   rowIndex * 2.1,
                   -0.1 - gap,
@@ -869,10 +869,7 @@ export class SceneLoader {
             );
             switch (existingTile.tid) {
               case 4: {
-                BABYLON.SceneLoader.ImportMesh(
-                  "",
-                  "/",
-                  "Clara.glb",
+                BABYLON.SceneLoader.ImportMesh("", "/public", "Clara.glb",
                   this.scene,
                   (meshes, unused1, unused2, ags) => {
                     meshes.forEach((mesh) => {
@@ -910,10 +907,7 @@ export class SceneLoader {
                 // leaf
 
                 this.movementGrid[rowIndex][columnIndex] = 5;
-                BABYLON.SceneLoader.ImportMesh(
-                  "",
-                  "/",
-                  "Leaf.glb",
+                BABYLON.SceneLoader.ImportMesh("", "/public", "Leaf.glb",
                   this.scene,
                   (meshes, ps, skeletons, ags) => {
                     meshes.forEach((mesh) => {
