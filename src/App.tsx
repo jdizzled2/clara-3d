@@ -4,7 +4,7 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
 import "./App.css";
 import { SceneLoader } from "./SceneLoader";
-import { scene } from "./scenes/scene2";
+import { scene } from "./scenes/scene6";
 
 // DOCUMENTATION
 // "scene" contains and array of tile definitions
@@ -21,12 +21,14 @@ function App() {
     sceneLoader.initCanvas(ref.current).then(() => {
       sceneLoader.loadScene(scene);
     });
-
   }, []);
 
   return (
     <div className="App" style={{ width: "100%", height: "100%" }}>
       <canvas ref={ref} style={{ width: "100%", height: "100%" }} />
+      <h1 id="yo" className="box stack_top">
+        YOU DIED
+      </h1>
     </div>
   );
 }
