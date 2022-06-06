@@ -16,7 +16,7 @@ import { SceneLoader } from "./SceneLoader";
 
 function App() {
   const { id: initialId } = useRouter().query;
-  const [id, setId] = useState(initialId);
+  const [id, setId] = useState(initialId as string);
   const [show3d, setShow3d] = useState(true);
   const [show2d, setShow2d] = useState(true);
 
