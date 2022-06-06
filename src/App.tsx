@@ -1,8 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 
-import '@babylonjs/loaders/glTF/2.0/glTFLoader';
+import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
-import { SceneLoader } from './SceneLoader';
+import Link from "next/link";
+import { useRouter } from "next/router";
+
+import { SceneLoader } from "./SceneLoader";
 
 // DOCUMENTATION
 // "scene" contains and array of tile definitions
@@ -12,12 +15,14 @@ import { SceneLoader } from './SceneLoader';
 // d - direction "0 - north", "1 - east", "2 - south", "3 - west"
 
 function App() {
-  const [id, setId] = useState("");
+  const { id: initialId } = useRouter().query;
+  const [id, setId] = useState(initialId);
   const [show3d, setShow3d] = useState(true);
   const [show2d, setShow2d] = useState(true);
 
   const [exercises, setExercises] = useState([]);
 
+  console.log("id: " + id);
   useEffect(() => {
     fetch("/api/boards")
       .then((b) => b.json())
@@ -54,9 +59,16 @@ function App() {
               }}
               onClick={() => setId(e.id)}
             >
-              {/* <Link href={`/exercise/${e.id}`}> */}
-              {e.name}
-              {/* </Link> */}
+              <Link href={`/?id=${e.id}`}>
+                <a
+                  style={{
+                    color: id === e.id ? "white" : "",
+                    textDecoration: "none",
+                  }}
+                >
+                  {e.name}
+                </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -130,7 +142,8 @@ function Scene3D({ id }) {
   React.useEffect(() => {
     fetch(`/api/board?id=${id}`)
       .then((t) => t.json())
-      .then((scene) => {
+      .then((dao) => {
+        let scene = JSON.parse(dao.content);
         let sceneLoader = new SceneLoader();
         sceneLoader.initCanvas(ref.current).then((e) => {
           engine.current = e;

@@ -1,3 +1,11 @@
-import App from '../App';
+import { NextPageContext } from "next";
 
-export default () => <App />;
+import App from "../App";
+
+const Page = () => <App />;
+
+Page.getInitialProps = async (context: NextPageContext) => {
+  return {};
+};
+
+export default Page;

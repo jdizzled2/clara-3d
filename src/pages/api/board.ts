@@ -1,18 +1,24 @@
-import fs from 'fs';
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiRequest, NextApiResponse } from "next";
 
-let filesArray = [];
+import { PrismaClient } from "@prisma/client";
 
-export default function (req: NextApiRequest, res: NextApiResponse) {
-  const id = req.query.id;
+const prisma = new PrismaClient();
 
-  if (filesArray.length === 0) {
-    const files = fs.readdirSync("./src/export");
-    filesArray = files.map((f) => {
-      return JSON.parse(
-        fs.readFileSync(`./src/export/${f}`, { encoding: "utf-8" })
-      );
-    });
-  }
-  res.json(filesArray.find((f) => f.id === id));
+export default async function (req: NextApiRequest, res: NextApiResponse) {
+  const id = req.query.id as string;
+
+  // if (filesArray.length === 0) {
+  //   const files = fs.readdirSync("./src/export");
+  //   filesArray = files.map((f) => {
+  //     return JSON.parse(
+  //       fs.readFileSync(`./src/export/${f}`, { encoding: "utf-8" })
+  //     );
+  //   });
+  // }
+  // res.json(filesArray.find((f) => f.id === id));
+
+  const data = await prisma.exercise.findFirst({
+    where: { id },
+  });
+  res.json(data);
 }
