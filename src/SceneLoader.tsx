@@ -27,6 +27,7 @@ export class SceneLoader {
   glbDef: SceneDefinition; // global scene definition
   treeArray = []; // tree grid of board
   houseArray = []; // array of possible NFO positions
+  theme: number; // theme options (0 - default, 1 - space)
 
   // clara variables
   playerAnimator: BABYLON.AnimationGroup; // clara animation
@@ -69,15 +70,29 @@ export class SceneLoader {
     let engine = new BABYLON.Engine(canvas, true);
 
     // create scene function
-    var createScene = (passedDL: number) => {
+    var createScene = (passedDL: number/*, passedTheme: number*/) => {
+
+      // assign detail level
+      this.detailLevel = passedDL;
+
+      // assign theme
+      //this.theme = passedTheme;
+
+      // initalise leaves array
       this.leafs = [];
 
       // create scene
       let scene = new BABYLON.Scene(engine);
+
       // assign scene to global
       this.scene = scene;
-      // set bg colour
-      scene.clearColor = BABYLON.Color3.White() as unknown as BABYLON.Color4;
+
+      // set background colour based on theme
+      //if (passedTheme == 0) {
+        scene.clearColor = BABYLON.Color3.White() as unknown as BABYLON.Color4;
+      //} else if (this.theme == 1) {
+      //  scene.clearColor = BABYLON.Color3.Black() as unknown as BABYLON.Color4;
+      //}
 
       // calls create fog function
       this.createFog();
@@ -91,9 +106,6 @@ export class SceneLoader {
       this.currentMoveWaitSpeed = this.moveWaitSpeed[1];
       this.currentLeafAnimationSpeed = this.leafAnimationSpeed[1];
 
-      // assign detail level
-      this.detailLevel = passedDL;
-
       // create camera
       let camera = new BABYLON.ArcRotateCamera(
         "camera",
@@ -101,15 +113,10 @@ export class SceneLoader {
         BABYLON.Tools.ToRadians(25),
         30,
         BABYLON.Vector3.Zero(),
-        //new BABYLON.Vector3(11, -2, 13.5),
         scene
       );
 
-      //camera.setTarget(new BABYLON.Vector3(11, -2, 13.5));
-      // camera.target.x = 11;
-      // camera.target.y = -2;
-      // camera.target.z = 13.5;
-
+      // set default camera angle (cam3 - restricted free cam)
       camera.lowerBetaLimit = 0;
       camera.upperBetaLimit = Math.PI / 2;
       camera.lowerRadiusLimit = 30;
@@ -186,7 +193,7 @@ export class SceneLoader {
       // create and setup detail options stack
       var optionsPanel = new GUI.StackPanel();
       optionsPanel.isVertical = false;
-      optionsPanel.width = "220px";
+      optionsPanel.width = "265px";
       optionsPanel.height = "70px";
       optionsPanel.paddingLeft = "10px";
       optionsPanel.paddingTop = "10px";
@@ -337,7 +344,7 @@ export class SceneLoader {
       });
 
       // create and setup reload button
-      var reloadBtn = GUI.Button.CreateImageOnlyButton("reload", "/reload.png");
+      let reloadBtn = GUI.Button.CreateImageOnlyButton("reload", "/reload.png");
       reloadBtn.height = "25px";
       reloadBtn.width = "35px";
       reloadBtn.paddingLeft = "10px";
@@ -358,11 +365,35 @@ export class SceneLoader {
         console.log("Scene has reloaded!");
       });
 
+      // let themeIcon = "";
+      // if (this.theme == 0) {
+      //   themeIcon = "/SpaceIcon.png";
+      //   console.log(themeIcon);
+      // }
+      // else if (this.theme == 1) {
+      //   themeIcon = "/GrassIcon.png";
+      // }
+      // let themeBtn = GUI.Button.CreateImageOnlyButton("themeBtn", themeIcon);
+      // themeBtn.height = "25px";
+      // themeBtn.width = "35px";
+      // themeBtn.paddingLeft = "10px";
+      // themeBtn.onPointerClickObservable.add(async() => {
+      //   // if (globalThis.theme == 0) {
+      //   //   globalThis.theme = 1;
+      //   // }
+      //   // else if (globalThis.theme == 1) {
+      //   //   globalThis.theme = 0;
+      //   // }
+        
+      //   // >>>>>>>>>>>>>>>>>>>>>>>>??????????????????????????????????????
+      // });
+
       // add options to panel
       optionsPanel.addControl(lowerDetailBtn);
       optionsPanel.addControl(detail);
       optionsPanel.addControl(higherDetailBtn);
       optionsPanel.addControl(reloadBtn);
+      //optionsPanel.addControl(themeBtn);
 
       // create and setup half speed button
       let halfSpeedBtn = GUI.Button.CreateImageOnlyButton(
@@ -522,8 +553,11 @@ export class SceneLoader {
     // assign default detail level
     this.detailLevel = 3;
 
+    // set theme to default
+    this.theme = 0;
+
     // create scene
-    var scene = createScene(this.detailLevel);
+    var scene = createScene(this.detailLevel/*, this.theme*/);
 
     // assign asset manager
     this.assetsManager = new BABYLON.AssetsManager(scene);
@@ -1030,7 +1064,7 @@ export class SceneLoader {
           );
         }
 
-        // non-functional object (NFO) placement algorithm
+        // detail placement algorithm
         // firstly, checks if the tile is defined
         if (existingTile != null) {
           // then runs a switch statement off the existing tiles id (tid)
@@ -1039,9 +1073,21 @@ export class SceneLoader {
           //    2 = water
           switch (existingTile.tid) {
             case 1: {
+              if (globalThis.theme == 0) {
+
+              }
+              else if (globalThis.theme == 1) {
+
+              }
               break;
             }
             case 2: {
+              if (globalThis.theme == 0) {
+
+              }
+              else if (globalThis.theme == 1) {
+                
+              }
               break;
             }
             default: {
@@ -1051,6 +1097,7 @@ export class SceneLoader {
         }
         // if the tile isn't defined, calls object placement function (WaterTile = false)
         else {
+
         }
         // WRITE NEW OBJECT PLACEMENT FUNCTION (replacing chooseItem())
         // ALSO NEED TO UPDATE MESHLOADER, ADDING NEW MODELS AND CHANGING GROUPINGS
@@ -1296,6 +1343,15 @@ export class SceneLoader {
     let mesh = Atlas.trees.get(tree + ".glb").createInstance("");
     mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
     mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
+  }
+
+
+  placeDecoration(xcoord: number, ycoord: number, zcoord: number, waterTile: boolean) {
+    let item = "";
+    let choice;
+    if (waterTile) {
+      choice = 3
+    }
   }
 
   // function to get decorative item

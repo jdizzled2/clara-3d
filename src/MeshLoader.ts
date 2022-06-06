@@ -17,7 +17,13 @@ export const Atlas = {
 };
 
 let tiles: { [index: string]: string[] } = {
-  topTiles: ["GrassTop1.glb", "GrassTop2.glb", "WaterTop.glb"],
+  topTiles: [
+    "GrassTop1.glb",
+    "GrassTop2.glb",
+    "SpaceTop1.glb",
+    "SpaceTop2.glb",
+    "WaterTop.glb",
+  ],
   trees: [
     "Tree1.glb",
     "Tree2.glb",
