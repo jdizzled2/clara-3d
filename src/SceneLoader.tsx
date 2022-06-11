@@ -70,7 +70,7 @@ export class SceneLoader {
     let engine = new BABYLON.Engine(canvas, true);
 
     // create scene function
-    var createScene = (passedDL: number/*, passedTheme: number*/) => {
+    var createScene = (passedDL: number, passedTheme: number) => {
 
       // assign detail level
       this.detailLevel = passedDL;
@@ -88,11 +88,11 @@ export class SceneLoader {
       this.scene = scene;
 
       // set background colour based on theme
-      //if (passedTheme == 0) {
+      if (passedTheme == 0) {
         scene.clearColor = BABYLON.Color3.White() as unknown as BABYLON.Color4;
-      //} else if (this.theme == 1) {
-      //  scene.clearColor = BABYLON.Color3.Black() as unknown as BABYLON.Color4;
-      //}
+      } else if (this.theme == 1) {
+        scene.clearColor = BABYLON.Color3.Black() as unknown as BABYLON.Color4;
+      }
 
       // calls create fog function
       this.createFog();
@@ -354,7 +354,7 @@ export class SceneLoader {
         this.scene.dispose();
         this.treeArray = [];
         this.houseArray = [];
-        var newScene = createScene(globalThis.detailLevel);
+        var newScene = createScene(globalThis.detailLevel, globalThis.theme);
         this.assetsManager = new BABYLON.AssetsManager(newScene);
         await preloadMeshes(this.assetsManager);
         engine.runRenderLoop(function () {
@@ -557,7 +557,7 @@ export class SceneLoader {
     this.theme = 0;
 
     // create scene
-    var scene = createScene(this.detailLevel/*, this.theme*/);
+    var scene = createScene(this.detailLevel, this.theme);
 
     // assign asset manager
     this.assetsManager = new BABYLON.AssetsManager(scene);
