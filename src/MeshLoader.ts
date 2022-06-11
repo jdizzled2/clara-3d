@@ -41,7 +41,16 @@ let tiles: { [index: string]: string[] } = {
     "Tree14.glb",
     "Tree15.glb",
   ],
-
+  spaceRocks: [
+    "SpaceRock1.glb",
+    "SpaceRock2.glb",
+    "SpaceRock3.glb",
+    "SpaceRock4.glb",
+    "SpaceRock5.glb",
+    "SpaceRock6.glb",
+    "SpaceRock7.glb",
+    "SpaceRock8.glb",
+  ],
   NFOS: [
     "GrassSet1.glb",
     "GrassSet2.glb",
