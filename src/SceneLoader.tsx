@@ -27,6 +27,8 @@ export class SceneLoader {
   glbDef: SceneDefinition; // global scene definition
   treeArray = []; // tree grid of board
   houseArray = []; // array of possible NFO positions
+  NFOs = ["House", "Tower1", "Tower2", "Tower3"]; // array of nfo names
+  spaceNFOs = ["SpaceRockBig1", "SpaceShip"]; // array of space nfo names
   theme: number; // theme options (0 - default, 1 - space)
 
   // clara variables
@@ -71,7 +73,6 @@ export class SceneLoader {
 
     // create scene function
     var createScene = (passedDL: number, passedTheme: number) => {
-
       // assign detail level
       globalThis.detailLevel = passedDL;
 
@@ -218,8 +219,7 @@ export class SceneLoader {
       detailHeading.width = "130px";
       if (globalThis.theme == 0) {
         detailHeading.color = "black";
-      }
-      else if (globalThis.theme == 1) {
+      } else if (globalThis.theme == 1) {
         detailHeading.color = "white";
       }
       detailHeading.fontSize = "20";
@@ -235,8 +235,7 @@ export class SceneLoader {
       cameraHeading.width = "180px";
       if (globalThis.theme == 0) {
         cameraHeading.color = "black";
-      }
-      else if (globalThis.theme == 1) {
+      } else if (globalThis.theme == 1) {
         cameraHeading.color = "white";
       }
       cameraHeading.fontSize = "20";
@@ -312,8 +311,7 @@ export class SceneLoader {
       detail.width = "80px";
       if (globalThis.theme == 0) {
         detail.color = "black";
-      }
-      else if (globalThis.theme == 1) {
+      } else if (globalThis.theme == 1) {
         detail.color = "white";
       }
 
@@ -321,8 +319,7 @@ export class SceneLoader {
       let lowerDetailBtnIcon = "";
       if (globalThis.theme == 0) {
         lowerDetailBtnIcon = "/lower.png";
-      }
-      else if (globalThis.theme == 1) {
+      } else if (globalThis.theme == 1) {
         lowerDetailBtnIcon = "/lower-white.png";
       }
       let lowerDetailBtn = GUI.Button.CreateImageOnlyButton(
@@ -346,8 +343,7 @@ export class SceneLoader {
       let higherDetailBtnIcon = "";
       if (globalThis.theme == 0) {
         higherDetailBtnIcon = "/higher.png";
-      }
-      else if (globalThis.theme == 1) {
+      } else if (globalThis.theme == 1) {
         higherDetailBtnIcon = "/higher-white.png";
       }
       let higherDetailBtn = GUI.Button.CreateImageOnlyButton(
@@ -371,8 +367,7 @@ export class SceneLoader {
       let reloadBtnIcon = "";
       if (globalThis.theme == 0) {
         reloadBtnIcon = "/reload.png";
-      }
-      else if (globalThis.theme == 1) {
+      } else if (globalThis.theme == 1) {
         reloadBtnIcon = "/reload-white.png";
       }
       let reloadBtn = GUI.Button.CreateImageOnlyButton("reload", reloadBtnIcon);
@@ -401,8 +396,7 @@ export class SceneLoader {
       let themeIcon = "";
       if (globalThis.theme == 0) {
         themeIcon = "/SpaceIcon.png";
-      }
-      else if (globalThis.theme == 1) {
+      } else if (globalThis.theme == 1) {
         themeIcon = "/GrassIcon.png";
       }
       let themeBtn = GUI.Button.CreateImageOnlyButton("themeBtn", themeIcon);
@@ -410,14 +404,13 @@ export class SceneLoader {
       themeBtn.width = "35px";
       themeBtn.paddingLeft = "10px";
       themeBtn.color = "transparent";
-      themeBtn.onPointerClickObservable.add(async() => {
+      themeBtn.onPointerClickObservable.add(async () => {
         if (globalThis.theme == 0) {
           globalThis.theme = 1;
-        }
-        else if (globalThis.theme == 1) {
+        } else if (globalThis.theme == 1) {
           globalThis.theme = 0;
         }
-        
+
         console.log("Reloading with new theme!");
 
         this.scene.dispose();
@@ -676,8 +669,7 @@ export class SceneLoader {
             let top;
             if (globalThis.theme == 0) {
               top = Atlas.topTiles.get("GrassTop1.glb").createInstance("top");
-            }
-            else if (globalThis.theme == 1) {
+            } else if (globalThis.theme == 1) {
               top = Atlas.topTiles.get("SpaceTop1.glb").createInstance("top");
             }
             top.position = new BABYLON.Vector3(
@@ -951,8 +943,7 @@ export class SceneLoader {
             let top;
             if (globalThis.theme == 0) {
               top = Atlas.topTiles.get("GrassTop2.glb").createInstance("top");
-            }
-            else if (globalThis.theme == 1) {
+            } else if (globalThis.theme == 1) {
               top = Atlas.topTiles.get("SpaceTop2.glb").createInstance("top");
             }
             top.position = new BABYLON.Vector3(
@@ -1000,12 +991,26 @@ export class SceneLoader {
               }
               case 5: {
                 // leaf
-
+                let model, scaleX, scaleY, scaleZ, frameEnd;
+                if (globalThis.theme == 0) {
+                  model = "Leaf.glb";
+                  scaleX = 0.1; 
+                  scaleY = 0.1; 
+                  scaleZ = 0.1;
+                  frameEnd = 145;
+                }
+                else if (globalThis.theme == 1) {
+                  model = "Star.glb";
+                  scaleX = 0.5; 
+                  scaleY = 0.5; 
+                  scaleZ = 0.5;
+                  frameEnd = 360;
+                }
                 this.movementGrid[rowIndex][columnIndex] = 5;
                 BABYLON.SceneLoader.ImportMesh(
                   "",
                   "/",
-                  "Leaf.glb",
+                  model,
                   this.scene,
                   (meshes, ps, skeletons, ags) => {
                     meshes.forEach((mesh) => {
@@ -1020,7 +1025,7 @@ export class SceneLoader {
                       1.5,
                       columnIndex * 2.1
                     );
-                    leaf1.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
+                    leaf1.scaling = new BABYLON.Vector3(scaleX, scaleY, scaleZ);
                     // remember where we instantiated the leaf
                     if (this.leafs[rowIndex] == null) {
                       this.leafs[rowIndex] = [];
@@ -1035,7 +1040,7 @@ export class SceneLoader {
                       true,
                       1,
                       0,
-                      145
+                      frameEnd
                     );
                   }
                 );
@@ -1116,8 +1121,7 @@ export class SceneLoader {
           let top;
           if (globalThis.theme == 0) {
             top = Atlas.topTiles.get("GrassTop2.glb").createInstance("top");
-          }
-          else if (globalThis.theme == 1) {
+          } else if (globalThis.theme == 1) {
             top = Atlas.topTiles.get("SpaceTop2.glb").createInstance("top");
           }
           top.position = new BABYLON.Vector3(
@@ -1137,19 +1141,13 @@ export class SceneLoader {
           switch (existingTile.tid) {
             case 1: {
               if (globalThis.theme == 0) {
-
-              }
-              else if (globalThis.theme == 1) {
-
+              } else if (globalThis.theme == 1) {
               }
               break;
             }
             case 2: {
               if (globalThis.theme == 0) {
-
-              }
-              else if (globalThis.theme == 1) {
-                
+              } else if (globalThis.theme == 1) {
               }
               break;
             }
@@ -1160,7 +1158,6 @@ export class SceneLoader {
         }
         // if the tile isn't defined, calls object placement function (WaterTile = false)
         else {
-
         }
         // WRITE NEW OBJECT PLACEMENT FUNCTION (replacing chooseItem())
         // ALSO NEED TO UPDATE MESHLOADER, ADDING NEW MODELS AND CHANGING GROUPINGS
@@ -1200,8 +1197,7 @@ export class SceneLoader {
         1.8,
         columns / 4.5
       );
-    }
-    else if (globalThis.theme == 1) {
+    } else if (globalThis.theme == 1) {
       this.importMesh(
         "SpaceIsland",
         width,
@@ -1215,25 +1211,17 @@ export class SceneLoader {
       );
     }
 
-    
     this.placeIslands(rows, columns);
     this.placeClouds(rows, columns);
     this.createFog(rows, columns);
-    this.checkNFOAvailability();
-    for (let i = 0; i < this.houseArray.length; i++) {
-      this.importMesh(
-        "House",
-        this.houseArray[i][0] * 2.1 + 1.05,
-        2.1,
-        this.houseArray[i][1] * 2.1 + 1.05,
-        Math.round(Math.random() * 4) * 300,
-        true,
-        2.1,
-        2.1,
-        2.1
-      );
+    if (this.checkNFOAvailability()) {
+      for (let i = 0; i < this.houseArray.length; i++) {
+        this.placeNFOs(i);
+      }
     }
     this.placeTrees();
+
+    
   }
 
   // function to place 4 static clouds around the island on all angles
@@ -1340,6 +1328,11 @@ export class SceneLoader {
         }
       }
     }
+    if (this.houseArray.length != 0) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   checkSurroundingTiles(rowCoord: number, colCoord: number) {
@@ -1356,14 +1349,68 @@ export class SceneLoader {
     );
   }
 
+  placeNFOs(iterator: number) {
+    let selectedNFO;
+    let scaleX, scaleY, scaleZ, posY;
+    if (globalThis.theme == 0) {
+      selectedNFO = this.NFOs[Math.floor(Math.random() * 4)];
+      if (
+        selectedNFO == "Tower1" ||
+        selectedNFO == "Tower2" ||
+        selectedNFO == "Tower3"
+      ) {
+        scaleY = 1.5;
+        posY = 1;
+      } else {
+        scaleY = 2.1;
+        posY = 2.1;
+      }
+      this.importMesh(
+        selectedNFO,
+        this.houseArray[iterator][0] * 2.1 + 1.05,
+        posY,
+        this.houseArray[iterator][1] * 2.1 + 1.05,
+        Math.round(Math.random() * 4) * 300,
+        true,
+        2.1,
+        scaleY,
+        2.1
+      );
+    } else if (globalThis.theme == 1) {
+      selectedNFO = this.spaceNFOs[Math.floor(Math.random() * 2)];
+      if (selectedNFO == "SpaceRockBig1") {
+        scaleX = 0.13;
+        scaleY = 0.15;
+        scaleZ = 0.08;
+        posY = 1;
+      }
+      else {
+        scaleX = 0.7;
+        scaleY = 0.7;
+        scaleZ = 0.7;
+        posY = 2.5;
+      }
+      this.importMesh(
+        selectedNFO,
+        this.houseArray[iterator][0] * 2.1 + 1.05,
+        posY,
+        this.houseArray[iterator][1] * 2.1 + 1.05,
+        Math.round(Math.random() * 4) * 90,
+        true,
+        scaleX,
+        scaleY,
+        scaleZ
+      );
+    }
+  }
+
   placeTrees() {
     for (let rIndex = 0; rIndex < this.glbDef.rows; rIndex++) {
       for (let cIndex = 0; cIndex < this.glbDef.columns; cIndex++) {
         if (this.treeArray[rIndex][cIndex] == 1) {
           if (globalThis.theme == 0) {
             this.getTreeOrRock(rIndex * 2.1, 1.8, cIndex * 2.1);
-          }
-          else if (globalThis.theme == 1) {
+          } else if (globalThis.theme == 1) {
             this.getTreeOrRock(rIndex * 2.1, 1, cIndex * 2.1);
           }
         }
@@ -1393,8 +1440,7 @@ export class SceneLoader {
         item += Math.floor(Math.random() * 15) + 1;
       }
       mesh = Atlas.trees.get(item + ".glb").createInstance("");
-    }
-    else if (globalThis.theme == 1) {
+    } else if (globalThis.theme == 1) {
       item = "SpaceRock";
       let itemNo = 0;
       if (globalThis.detailLevel == 1) {
@@ -1404,11 +1450,15 @@ export class SceneLoader {
       } else if (globalThis.detailLevel == 3) {
         itemNo = Math.floor(Math.random() * 8) + 1;
       }
-      let scale = {scaleX: 0, scaleY: 0, scaleZ: 0};
+      let scale = { scaleX: 0, scaleY: 0, scaleZ: 0 };
       this.getSpaceRockScaling(scale, itemNo);
       item += itemNo;
       mesh = Atlas.spaceRocks.get(item + ".glb").createInstance("");
-      mesh.scaling = new BABYLON.Vector3(scale.scaleX, scale.scaleY, scale.scaleZ);
+      mesh.scaling = new BABYLON.Vector3(
+        scale.scaleX,
+        scale.scaleY,
+        scale.scaleZ
+      );
     }
     mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
     mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
@@ -1425,7 +1475,7 @@ export class SceneLoader {
   // spaceRock7 = 0.025 0.05, 0.02
   // spaceRock8 = 0.025 0.08, 0.02
   getSpaceRockScaling(scalingObj, itemNo: number) {
-    switch(itemNo) {
+    switch (itemNo) {
       case 1: {
         scalingObj.scaleX = 0.03;
         scalingObj.scaleY = 0.05;
@@ -1478,14 +1528,16 @@ export class SceneLoader {
         break;
       }
     }
-    
   }
 
   placeDecoration(xcoord: number, ycoord: number, zcoord: number, waterTile: boolean) {
     let item = "";
     let choice;
-    if (waterTile) {
-      choice = 3
+    if (globalThis.theme == 0) {
+
+    }
+    else if (globalThis.theme == 1) {
+
     }
   }
 
@@ -1855,7 +1907,13 @@ export class SceneLoader {
     var mesh1 = this.leafAnimatorArray[this.claraXCoord][this.claraYCoord];
 
     mesh1.stop();
-    mesh1.start(true, 1, 150, 300); //idle
+    if (globalThis.theme == 0) {
+      mesh1.start(true, 1, 150, 300);
+    }
+    else if (globalThis.theme == 1) {
+      mesh1.start(true, 1, 385, 600);
+    }
+     //idle
     await delay(this.currentLeafAnimationSpeed);
     mesh.dispose();
   }
@@ -1917,7 +1975,6 @@ export class SceneLoader {
   claraMoveForwardFunction() {
     if (!this.justMoved && this.alive) {
       if (this.checkMove()) {
-
         //this.currentPosition = this.clara.position;
         this.justMoved = true;
         this.currentPosition = this.clara.position;
@@ -1970,8 +2027,8 @@ export class SceneLoader {
           }
         }
         var anim = this.customAnimationFunctionClara(nextPosition);
-      } 
-    } 
+      }
+    }
   }
 
   playClaraIdleAnimation() {
@@ -2210,10 +2267,13 @@ export class SceneLoader {
         else {
           let tile;
           if (globalThis.theme == 0) {
-            tile = Atlas.topTiles.get("GrassTop" + tileType + ".glb").createInstance("top");
-          }
-          else if (globalThis.theme == 1) {
-            tile = Atlas.topTiles.get("SpaceTop" + tileType + ".glb").createInstance("top");
+            tile = Atlas.topTiles
+              .get("GrassTop" + tileType + ".glb")
+              .createInstance("top");
+          } else if (globalThis.theme == 1) {
+            tile = Atlas.topTiles
+              .get("SpaceTop" + tileType + ".glb")
+              .createInstance("top");
           }
           tile.position = new BABYLON.Vector3(
             iRowsIndex * 2.1 + x,
@@ -2223,7 +2283,11 @@ export class SceneLoader {
         }
         // if dark grass, place tree
         if (tileType == 1) {
-          this.getTreeOrRock(iRowsIndex * 2.1 + x, 1.6 + y, iColsIndex * 2.1 + z);
+          this.getTreeOrRock(
+            iRowsIndex * 2.1 + x,
+            1.6 + y,
+            iColsIndex * 2.1 + z
+          );
         }
 
         // if water tile, place water item
@@ -2284,8 +2348,7 @@ export class SceneLoader {
         1.8,
         iCols / 4.5
       );
-    }
-    else if (globalThis.theme == 1) {
+    } else if (globalThis.theme == 1) {
       this.importMesh(
         "SpaceIsland",
         width,
@@ -2298,13 +2361,12 @@ export class SceneLoader {
         iCols / 4.5
       );
     }
-    
   }
 
   createFog(r: number, c: number) {
     this.scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
-    this.scene.fogStart = r*10;
-    this.scene.fogEnd = c*10;
+    this.scene.fogStart = r * 10;
+    this.scene.fogEnd = c * 10;
     this.scene.fogColor = new BABYLON.Color3(0.8, 0.8, 0.8);
   }
 
