@@ -4,8 +4,9 @@ import { TimerState } from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
-import {movements} from './moves';
+import { movements } from "./moves";
 import { Atlas, preloadMeshes } from "./MeshLoader";
+import { GLTF1 } from "@babylonjs/loaders";
 
 // board details object
 type SceneDefinition = {
@@ -129,49 +130,6 @@ export class SceneLoader {
       camera.attachControl("canvas", true);
       this.camera = camera;
 
-      /* BELOW IS FOR MINIMAP CODE, NOT SURE ABT IT YET 
-      var camera2 = new BABYLON.ArcRotateCamera("Camera", -Math.PI/2, 0.001, 60, new BABYLON.Vector3(11, -2, 13.5), scene);
-      scene.activeCameras = [];
-      // scene.activeCameras.push(camera2);
-      scene.activeCameras.push(camera);
-      camera.attachControl(canvas, true);
-      camera2.attachControl(canvas, true);
-
-	    camera2.layerMask = 2;
-      
-	    var epsilon = .9999999;  // threshold
-
-      var rt2 = new BABYLON.RenderTargetTexture("depth", 1024, scene, true, true);
-      scene.customRenderTargets.push(rt2);
-	    rt2.activeCamera = camera2;
-      rt2.renderList = scene.meshes;
-
-      var mon2 = BABYLON.Mesh.CreatePlane("plane", 4, scene);
-      mon2.position = new BABYLON.Vector3(canvas.width/130, canvas.height/150, 20)
-	    // mon2.showBoundingBox = true;
-      var mon2mat = new BABYLON.StandardMaterial("texturePlane", scene);
-      mon2mat.diffuseColor = new BABYLON.Color3(1,1,1);
-      mon2mat.diffuseTexture = rt2;
-      mon2mat.specularColor = BABYLON.Color3.Black();
-
-      mon2mat.diffuseTexture.scale(1);
-      // mon2mat.diffuseTexture.scale = 1; // zoom
-      // mon2mat.diffuseTexture.vScale = 1;
-
-      mon2mat.diffuseTexture.level = 1.2; // intensity
-
-      mon2mat.emissiveColor = new BABYLON.Color3(1,1,1); // backlight
-	    mon2.material = mon2mat;
-	    mon2.parent = camera;
-	    // mon2.parent = camera;
-	    mon2.layerMask = 1;
-
-	    mon2.enableEdgesRendering(epsilon);	
-	    mon2.edgesWidth = 5.0;
-	    mon2.edgesColor = new BABYLON.Color4(1, 1, 1, 1);
-
-      */
-
       // create gui
       var claraGUI = GUI.AdvancedDynamicTexture.CreateFullscreenUI(
         "UI",
@@ -208,16 +166,14 @@ export class SceneLoader {
       speedPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
       speedPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
 
-       //panel for reading input from text file
-       var inputPanel = new GUI.StackPanel();
-       inputPanel.isVertical = false;
-       inputPanel.height = "100px";
-       inputPanel.width = "185px";
-       inputPanel.paddingRight = "10px"
-       inputPanel.paddingTop = "10px"
-       inputPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-       inputPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
- 
+      //panel for reading input from text file
+      var inputPanel = new GUI.StackPanel();
+      inputPanel.isVertical = false;
+      inputPanel.height = "35px";
+      inputPanel.width = "35px";
+      inputPanel.paddingTop = "10px";
+      inputPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+      inputPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
 
       // add stacks to gui
       claraGUI.addControl(cameraPanel);
@@ -343,7 +299,8 @@ export class SceneLoader {
       lowerDetailBtn.width = "25px";
       lowerDetailBtn.color = "transparent";
       lowerDetailBtn.onPointerClickObservable.add(function () {
-        if (globalThis.detailLevel == 2) {
+        if (globalThis.detailLevel == 1) {
+        } else if (globalThis.detailLevel == 2) {
           globalThis.detailLevel = 1;
           detail.text = "Low";
         } else {
@@ -373,6 +330,7 @@ export class SceneLoader {
         } else if (globalThis.detailLevel == 2) {
           globalThis.detailLevel = 3;
           detail.text = "High";
+        } else {
         }
       });
 
@@ -587,41 +545,42 @@ export class SceneLoader {
         }
       });
 
-      var inputButton = GUI.Button.CreateSimpleButton("textInput", "textInput");
-      inputButton.width = 0.2;
-      inputButton.height = "40px";
-      inputButton.color = "white";
-      inputButton.background = "green";
-      inputButton.width = "150px";
-      inputButton.onPointerClickObservable.add(async ()=> {
+      let inputBtnIcon = "";
+      if (globalThis.theme == 0) {
+        inputBtnIcon = "/play.png";
+      } else if (globalThis.theme == 1) {
+        inputBtnIcon = "/play-white.png";
+      }
+      let inputButton = GUI.Button.CreateImageOnlyButton(
+        "playInput",
+        inputBtnIcon
+      );
+      inputButton.width = "35px";
+      inputButton.height = "25px";
+      inputButton.paddingLeft = "10px";
+      inputButton.color = "transparent";
+      inputButton.onPointerClickObservable.add(async () => {
         console.log("textInput button has been pressed");
 
         this.playerAnimator.start(true, 1, 60, 160);
         let numbMove = movements.numberOfMoves;
-        const inputDelay = async (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms));
-        for(let i = 0; i<numbMove;i++ ){
+        const inputDelay = async (ms = 1000) =>
+          new Promise((resolve) => setTimeout(resolve, ms));
+        for (let i = 0; i < numbMove; i++) {
           var moveMade = movements.movesToBeMade[i];
-          if(moveMade == 1){
-            console.log("tried moving forward");
-            this.claraMoveForwardFunction(); 
+          if (moveMade == 1) {
+            this.claraMoveForwardFunction();
             await inputDelay(this.currentMoveWaitSpeed);
-  
           }
-          if(moveMade == 2){
-            console.log("tried to turn right");
+          if (moveMade == 2) {
             this.claraTurnRightFunction();
             await inputDelay(this.currentTurnSpeed);
           }
         }
         console.log("All Moves from file have been read and performed");
-
       });
 
       inputPanel.addControl(inputButton);
-      // USED FOR MINIMAP, CURRENTLY WIP
-      // scene.registerBeforeRender(function () {
-      //   camera2.alpha = camera.alpha;
-      // });
 
       // enable depth renderering and return scene
       scene.enableDepthRenderer();
@@ -664,25 +623,9 @@ export class SceneLoader {
     // assign global definition
     this.glbDef = definition;
 
-    // this.camera.target = new BABYLON.Vector3(11, -2, 13.5);
-
-    //this.camera.target.x = 11;
-
-    // this.camera.target.x = rows;
-    // this.camera.target.y = (rows - columns);
-    // this.camera.target.z = columns;
-
     this.camera.target.x = rows;
     this.camera.target.y = rows - columns;
     this.camera.target.z = columns;
-
-    this.camera.position.x = rows;
-    this.camera.position.y = columns * 2.1;
-    this.camera.position.z = columns;
-
-    // this.camera.target.x = rows + (rows/2.1);
-    // this.camera.target.y = columns - (columns/2.1);
-    // this.camera.target.z = columns;
 
     // create board loop
     for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
@@ -731,250 +674,8 @@ export class SceneLoader {
               columnIndex * 2.1
             );
             top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-            let gap = 2.1;
-
-            if (globalThis.detailLevel != 1) {
-              let waterParticles = new BABYLON.ParticleSystem(
-                "particles",
-                1000,
-                this.scene
-              );
-              waterParticles.particleTexture = new BABYLON.Texture("spray.png");
-              waterParticles.emitter = new BABYLON.Vector3(
-                rowIndex * 2.1,
-                0,
-                columnIndex * 2.1
-              );
-
-              waterParticles.emitRate = 1;
-              waterParticles.minSize = 0;
-              waterParticles.maxSize = 0.5;
-              waterParticles.start();
-            }
-
-            /*
-               if tile on edge, put waterfall
-            */
-            if (rowIndex == 0) {
-              let top = Atlas.topTiles
-                .get("WaterTop.glb")
-                .createInstance("top");
-              top.position = new BABYLON.Vector3(
-                rowIndex * 2.1 - 1.15,
-                -0.1,
-                columnIndex * 2.1
-              );
-              top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-              top.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
-              let gap = 2.1;
-              var particleSys = new BABYLON.ParticleSystem(
-                "particles",
-                1000,
-                this.scene
-              ); //creates the particle system
-
-              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-
-              particleSys.emitter = new BABYLON.Vector3(
-                rowIndex * 2.1 - 1.15,
-                -0.1,
-                columnIndex * 2.1
-              );
-              particleSys.start();
-              for (let i = 0; i < 5; i++) {
-                let top = Atlas.topTiles
-                  .get("WaterTop.glb")
-                  .createInstance("top");
-                top.position = new BABYLON.Vector3(
-                  rowIndex * 2.1 - 1.15,
-                  -0.1 - gap,
-                  columnIndex * 2.1
-                );
-                top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-                top.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
-                var particleSys = new BABYLON.ParticleSystem(
-                  "particles",
-                  1000,
-                  this.scene
-                ); //creates the particle system
-
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-
-                particleSys.emitter = new BABYLON.Vector3(
-                  rowIndex * 2.1 - 1.15,
-                  -0.1 - gap,
-                  columnIndex * 2.1
-                );
-                particleSys.start();
-                gap += 2.1;
-              }
-            }
-
-            if (rowIndex == rows - 1) {
-              let top = Atlas.topTiles
-                .get("WaterTop.glb")
-                .createInstance("top");
-              top.position = new BABYLON.Vector3(
-                rowIndex * 2.1 + 1.15,
-                -0.1,
-                columnIndex * 2.1
-              );
-              top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-              top.rotation = new BABYLON.Vector3(0, Math.PI, Math.PI / 2);
-
-              gap = 2.1;
-
-              var particleSys = new BABYLON.ParticleSystem(
-                "particles",
-                1000,
-                this.scene
-              ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-              particleSys.emitter = new BABYLON.Vector3(
-                rowIndex * 2.1 + 1.15,
-                -0.1,
-                columnIndex * 2.1
-              );
-              particleSys.start();
-
-              for (let i = 0; i < 5; i++) {
-                let top = Atlas.topTiles
-                  .get("WaterTop.glb")
-                  .createInstance("top");
-                top.position = new BABYLON.Vector3(
-                  rowIndex * 2.1 + 1.15,
-                  -0.1 - gap,
-                  columnIndex * 2.1
-                );
-                top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-                top.rotation = new BABYLON.Vector3(0, Math.PI, Math.PI / 2);
-
-                var particleSys = new BABYLON.ParticleSystem(
-                  "particles",
-                  1000,
-                  this.scene
-                ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                particleSys.emitter = new BABYLON.Vector3(
-                  rowIndex * 2.1 + 1.15,
-                  -0.1 - gap,
-                  columnIndex * 2.1
-                );
-                particleSys.start();
-
-                gap += 2.1;
-              }
-            }
-
-            if (columnIndex == 0) {
-              let top = Atlas.topTiles
-                .get("WaterTop.glb")
-                .createInstance("top");
-              top.position = new BABYLON.Vector3(
-                rowIndex * 2.1,
-                -0.1,
-                columnIndex * 2.1 - 1.15
-              );
-              top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-              top.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
-              gap = 2.1;
-
-              var particleSys = new BABYLON.ParticleSystem(
-                "particles",
-                1000,
-                this.scene
-              ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-              particleSys.emitter = new BABYLON.Vector3(
-                rowIndex * 2.1,
-                -0.1,
-                columnIndex * 2.1 - 1.15
-              );
-              particleSys.start();
-
-              for (let i = 0; i < 5; i++) {
-                let top = Atlas.topTiles
-                  .get("WaterTop.glb")
-                  .createInstance("top");
-                top.position = new BABYLON.Vector3(
-                  rowIndex * 2.1,
-                  -0.1 - gap,
-                  columnIndex * 2.1 - 1.15
-                );
-                top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-                top.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
-
-                var particleSys = new BABYLON.ParticleSystem(
-                  "particles",
-                  1000,
-                  this.scene
-                ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                particleSys.emitter = new BABYLON.Vector3(
-                  rowIndex * 2.1,
-                  -0.1 - gap,
-                  columnIndex * 2.1 - 1.15
-                );
-                particleSys.start();
-                gap += 2.1;
-              }
-            }
-
-            if (columnIndex == columns - 1) {
-              let top = Atlas.topTiles
-                .get("WaterTop.glb")
-                .createInstance("top");
-              top.position = new BABYLON.Vector3(
-                rowIndex * 2.1,
-                -0.1,
-                columnIndex * 2.1 + 1.15
-              );
-              top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-              top.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
-
-              var particleSys = new BABYLON.ParticleSystem(
-                "particles",
-                1000,
-                this.scene
-              ); //creates the particle system
-              particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-              particleSys.emitter = new BABYLON.Vector3(
-                rowIndex * 2.1,
-                -0.1,
-                columnIndex * 2.1 + 1.15
-              );
-              particleSys.start();
-
-              gap = 2.1;
-
-              for (let i = 0; i < 5; i++) {
-                let top = Atlas.topTiles
-                  .get("WaterTop.glb")
-                  .createInstance("top");
-                top.position = new BABYLON.Vector3(
-                  rowIndex * 2.1,
-                  -0.1 - gap,
-                  columnIndex * 2.1 + 1.15
-                );
-                top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-                top.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
-
-                var particleSys = new BABYLON.ParticleSystem(
-                  "particles",
-                  1000,
-                  this.scene
-                ); //creates the particle system
-                particleSys.particleTexture = new BABYLON.Texture("spray.png"); //texture of each particle
-                particleSys.emitter = new BABYLON.Vector3(
-                  rowIndex * 2.1,
-                  -0.1 - gap,
-                  columnIndex * 2.1 + 1.15
-                );
-                particleSys.start();
-
-                gap += 2.1;
-              }
-            }
+            this.placeParticles(rowIndex * 2.1, 0, columnIndex * 2.1, false);
+            this.checkAndPlaceWaterfalls(rowIndex, columnIndex);
 
             this.movementGrid[rowIndex][columnIndex] = 2;
           }
@@ -1038,15 +739,14 @@ export class SceneLoader {
                 let model, scaleX, scaleY, scaleZ, frameEnd;
                 if (globalThis.theme == 0) {
                   model = "Leaf.glb";
-                  scaleX = 0.1; 
-                  scaleY = 0.1; 
+                  scaleX = 0.1;
+                  scaleY = 0.1;
                   scaleZ = 0.1;
                   frameEnd = 145;
-                }
-                else if (globalThis.theme == 1) {
+                } else if (globalThis.theme == 1) {
                   model = "Star.glb";
-                  scaleX = 0.5; 
-                  scaleY = 0.5; 
+                  scaleX = 0.5;
+                  scaleY = 0.5;
                   scaleZ = 0.5;
                   frameEnd = 360;
                 }
@@ -1092,8 +792,6 @@ export class SceneLoader {
               }
               case 6: {
                 // mushroom
-
-                this.movementGrid[rowIndex][columnIndex] = 6;
                 let item = "Mushrooms1";
                 let top = Atlas.mushrooms.get(item + ".glb").createInstance("");
                 top.position = new BABYLON.Vector3(
@@ -1107,6 +805,7 @@ export class SceneLoader {
                   this.mushrooms[rowIndex] = [];
                 }
                 this.mushrooms[rowIndex][columnIndex] = top;
+                this.movementGrid[rowIndex][columnIndex] = 6;
                 break;
               }
               case 7: {
@@ -1175,54 +874,26 @@ export class SceneLoader {
           );
         }
 
-        // detail placement algorithm
-        // firstly, checks if the tile is defined
-        if (existingTile != null) {
-          // then runs a switch statement off the existing tiles id (tid)
-          // where,
-          //    1 = tree
-          //    2 = water
-          switch (existingTile.tid) {
-            case 1: {
-              if (globalThis.theme == 0) {
-              } else if (globalThis.theme == 1) {
+        if (existingTile == null || (existingTile != null && existingTile.tid != 2)) {
+          if (globalThis.detailLevel == 3) {
+            if (globalThis.theme == 0) {
+              this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1);
+            } else if (globalThis.theme == 1) {
+              if (Math.floor(Math.random() * 10 + 1) > 6) {
+                this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1);
               }
-              break;
             }
-            case 2: {
-              if (globalThis.theme == 0) {
-              } else if (globalThis.theme == 1) {
+          } else if (globalThis.detailLevel == 2) {
+            if (Math.floor(Math.random() * 10) + 1 < 5) {
+              if (globalThis.theme == 1) {
+                if (Math.floor(Math.random() * 10 + 1) > 6) {
+                  this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1);
+                }
               }
-              break;
-            }
-            default: {
-              break;
             }
           }
         }
-        // if the tile isn't defined, calls object placement function (WaterTile = false)
-        else {
-        }
-        // WRITE NEW OBJECT PLACEMENT FUNCTION (replacing chooseItem())
-        // ALSO NEED TO UPDATE MESHLOADER, ADDING NEW MODELS AND CHANGING GROUPINGS
 
-        if (existingTile != null && existingTile.tid == 2) {
-          if (globalThis.detailLevel == 3) {
-            this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, true);
-          } else if (globalThis.detailLevel == 2) {
-            if (Math.floor(Math.random() * 10) + 1 < 5) {
-              this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, true);
-            }
-          }
-        } else {
-          if (globalThis.detailLevel == 3) {
-            this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, false);
-          } else if (globalThis.detailLevel == 2) {
-            if (Math.floor(Math.random() * 10) + 1 < 5) {
-              this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1, false);
-            }
-          }
-        }
       }
     }
 
@@ -1258,19 +929,17 @@ export class SceneLoader {
     this.placeIslands(rows, columns);
     this.placeClouds(rows, columns);
     this.createFog(rows, columns);
-    if (this.checkNFOAvailability()) {
+    if (globalThis.detailLevel != 1 && this.checkNFOAvailability()) {
       for (let i = 0; i < this.houseArray.length; i++) {
         this.placeNFOs(i);
       }
     }
     this.placeTrees();
-
-    
   }
 
   // function to place 4 static clouds around the island on all angles
   placeClouds(rows: number, cols: number) {
-    if (globalThis.theme == 0) {
+    if (globalThis.theme == 0 && globalThis.detailLevel != 1) {
       var rCentre = (rows * 2.1 - 2.1) / 2;
       var cCentre = (cols * 2.1 - 2.1) / 2;
       let x,
@@ -1427,8 +1096,7 @@ export class SceneLoader {
         scaleY = 0.15;
         scaleZ = 0.08;
         posY = 1;
-      }
-      else {
+      } else {
         scaleX = 0.7;
         scaleY = 0.7;
         scaleZ = 0.7;
@@ -1572,43 +1240,23 @@ export class SceneLoader {
     }
   }
 
-  placeDecoration(xcoord: number, ycoord: number, zcoord: number, waterTile: boolean) {
-    let item = "";
-    let choice;
-    if (globalThis.theme == 0) {
-
-    }
-    else if (globalThis.theme == 1) {
-
-    }
-  }
-
   // function to get decorative item
+  // grass:
+  //    - Group 1: GrassSet1 (<90KB)
+  //    - Group 2: GrassSet1 - GrassSet3 (<130KB)
+  //    - Group 3: GrassSet1 - GrassSet5 (<150KB)
+  //
   // tall grasses:
   //    - Group 1: TallGrass1 (<=36KB)
   //    - Group 2: TallGrass1 - TallGrass4 (<=37KB)
   //    - Group 3: TallGrass1 - TallGrass5 (<=38KB)
   //
-  // grass sets:
-  //    - Group 1: GrassSet1 (<90KB)
-  //    - Group 2: GrassSet1 - GrassSet3 (<130KB)
-  //    - Group 3: GrassSet1 - GrassSet5 (<150KB)
-  //
-  // mushrooms:
-  //    - Group 1: Mushrooms1 - Mushrooms2 (<40KB)
-  //    - Group 2: Mushrooms1 - Mushrooms3 (<50KB)
-  //    - Group 3: Mushrooms1 - Mushrooms4 (<60KB)
-  chooseItem(
-    xcoord: number,
-    ycoord: number,
-    zcoord: number,
-    waterTile: boolean
-  ) {
+  chooseItem(xcoord: number, ycoord: number, zcoord: number) {
     let item = "";
 
     let choice;
-    if (waterTile) {
-      choice = 3;
+    if (globalThis.theme == 1) {
+      choice = 2;
     } else {
       choice = Math.floor(Math.random() * 3);
     }
@@ -1666,32 +1314,6 @@ export class SceneLoader {
         let mesh = Atlas.stones.get(item + ".glb").createInstance("");
         mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
         mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-        break;
-      }
-      // case 3 = Mushrooms
-      case 3: {
-        /*
-          NOT SURE IF WE SHOULD INCLUDE MUSHROOMS IF CLIENT WANTS TO USE THESE FOR MUSHROOM ITEMS
-        */
-        // item = "Mushrooms";
-        // if (globalThis.detailLevel == 1) {
-        //   item += Math.floor(Math.random() * 2) + 1;
-        //   let mesh = Atlas.mushrooms.get(item + ".glb").createInstance("");
-        //   mesh.position = new BABYLON.Vector3(xcoord, 1.3, zcoord);
-        //   mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-        // }
-        // else if (globalThis.detailLevel == 2) {
-        //   item += Math.floor(Math.random() * 3) + 1;
-        //   let mesh = Atlas.mushrooms.get(item + ".glb").createInstance("");
-        //   mesh.position = new BABYLON.Vector3(xcoord, 1.5, zcoord);
-        //   mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-        // }
-        // else if (globalThis.detailLevel == 3) {
-        //   item += Math.floor(Math.random() * 4) + 1;
-        //   let mesh = Atlas.mushrooms.get(item + ".glb").createInstance("");
-        //   mesh.position = new BABYLON.Vector3(xcoord, 1.5, zcoord);
-        //   mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
-        // }
         break;
       }
       default: {
@@ -1951,11 +1573,10 @@ export class SceneLoader {
     mesh1.stop();
     if (globalThis.theme == 0) {
       mesh1.start(true, 1, 150, 300);
-    }
-    else if (globalThis.theme == 1) {
+    } else if (globalThis.theme == 1) {
       mesh1.start(true, 1, 385, 600);
     }
-     //idle
+    //idle
     await delay(this.currentLeafAnimationSpeed);
     mesh.dispose();
   }
@@ -2293,36 +1914,27 @@ export class SceneLoader {
     // island generation loop
     for (let iRowsIndex = 0; iRowsIndex < iRows; iRowsIndex++) {
       for (let iColsIndex = 0; iColsIndex < iCols; iColsIndex++) {
-        // determines tile type (1 = dark grass, 2 = light grass, 3 = water)
+        // determines tile type (1 = dark grass, 2 = light grass)
         let tileType = Math.floor(Math.random() * 2) + 1;
         // if tile is water, place water
-        if (tileType == 3) {
-          let tile = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
-          tile.position = new BABYLON.Vector3(
-            iRowsIndex * 2.1 + x,
-            0.9 + y,
-            iColsIndex * 2.1 + z
-          );
-          tile.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
-        }
+
         // else place either dark or light grass
-        else {
-          let tile;
-          if (globalThis.theme == 0) {
-            tile = Atlas.topTiles
-              .get("GrassTop" + tileType + ".glb")
-              .createInstance("top");
-          } else if (globalThis.theme == 1) {
-            tile = Atlas.topTiles
-              .get("SpaceTop" + tileType + ".glb")
-              .createInstance("top");
-          }
-          tile.position = new BABYLON.Vector3(
-            iRowsIndex * 2.1 + x,
-            y,
-            iColsIndex * 2.1 + z
-          );
+        let tile;
+        if (globalThis.theme == 0) {
+          tile = Atlas.topTiles
+            .get("GrassTop" + tileType + ".glb")
+            .createInstance("top");
+        } else if (globalThis.theme == 1) {
+          tile = Atlas.topTiles
+            .get("SpaceTop" + tileType + ".glb")
+            .createInstance("top");
         }
+        tile.position = new BABYLON.Vector3(
+          iRowsIndex * 2.1 + x,
+          y,
+          iColsIndex * 2.1 + z
+        );
+
         // if dark grass, place tree
         if (tileType == 1) {
           this.getTreeOrRock(
@@ -2332,44 +1944,11 @@ export class SceneLoader {
           );
         }
 
-        // if water tile, place water item
-        if (tileType == 3) {
-          if (globalThis.detailLevel == 3) {
-            this.chooseItem(
-              iRowsIndex * 2.1 + x,
-              1 + y,
-              iColsIndex * 2.1 + z,
-              true
-            );
-          } else if (globalThis.detailLevel == 2) {
-            if (Math.floor(Math.random() * 10) + 1 < 5) {
-              this.chooseItem(
-                iRowsIndex * 2.1 + x,
-                1 + y,
-                iColsIndex * 2.1 + z,
-                true
-              );
-            }
-          }
-        }
-        // if grass, place regular item
-        else {
-          if (globalThis.detailLevel == 3) {
-            this.chooseItem(
-              iRowsIndex * 2.1 + x,
-              1 + y,
-              iColsIndex * 2.1 + z,
-              false
-            );
-          } else if (globalThis.detailLevel == 2) {
-            if (Math.floor(Math.random() * 10) + 1 < 5) {
-              this.chooseItem(
-                iRowsIndex * 2.1 + x,
-                1 + y,
-                iColsIndex * 2.1 + z,
-                false
-              );
-            }
+        if (globalThis.detailLevel == 3) {
+          this.chooseItem(iRowsIndex * 2.1 + x, 1 + y, iColsIndex * 2.1 + z);
+        } else if (globalThis.detailLevel == 2) {
+          if (Math.floor(Math.random() * 10) + 1 < 5) {
+            this.chooseItem(iRowsIndex * 2.1 + x, 1 + y, iColsIndex * 2.1 + z);
           }
         }
       }
@@ -2415,5 +1994,155 @@ export class SceneLoader {
   playerDied() {
     document.getElementById("yo").style.display = "block";
     document.getElementById("yo").style.color = "red";
+  }
+
+  placeParticles(x: number, y: number, z: number, waterfall: boolean) {
+    if (globalThis.detailLevel != 1) {
+      let waterParticles = new BABYLON.ParticleSystem(
+        "particles",
+        1000,
+        this.scene
+      );
+      waterParticles.particleTexture = new BABYLON.Texture("spray.png");
+      waterParticles.emitter = new BABYLON.Vector3(x, y, z);
+      if (!waterfall) {
+        waterParticles.emitRate = 1;
+        waterParticles.minSize = 0;
+        waterParticles.maxSize = 0.5;
+      }
+      waterParticles.start();
+    }
+  }
+
+  checkAndPlaceWaterfalls(rIndex: number, cIndex: number) {
+    let gap = 2.1;
+    if (rIndex == 0) {
+      let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+      top.position = new BABYLON.Vector3(
+        rIndex * 2.1 - 1.15,
+        -0.1,
+        cIndex * 2.1
+      );
+      top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+      top.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
+      var particleSys = new BABYLON.ParticleSystem(
+        "particles",
+        1000,
+        this.scene
+      );
+      gap = 2.1;
+      this.placeParticles(rIndex * 2.1 - 1.15, -0.1, cIndex * 2.1, true);
+
+      for (let i = 0; i < 5; i++) {
+        let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+        top.position = new BABYLON.Vector3(
+          rIndex * 2.1 - 1.15,
+          -0.1 - gap,
+          cIndex * 2.1
+        );
+        top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+        top.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
+        this.placeParticles(
+          rIndex * 2.1 - 1.15,
+          -0.1 - gap,
+          cIndex * 2.1,
+          true
+        );
+        gap += 2.1;
+      }
+    }
+
+    if (rIndex == this.glbDef.rows - 1) {
+      let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+      top.position = new BABYLON.Vector3(
+        rIndex * 2.1 + 1.15,
+        -0.1,
+        cIndex * 2.1
+      );
+      top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+      top.rotation = new BABYLON.Vector3(0, Math.PI, Math.PI / 2);
+      gap = 2.1;
+      this.placeParticles(rIndex * 2.1 + 1.15, -0.1, cIndex * 2.1, true);
+
+      for (let i = 0; i < 5; i++) {
+        let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+        top.position = new BABYLON.Vector3(
+          rIndex * 2.1 + 1.15,
+          -0.1 - gap,
+          cIndex * 2.1
+        );
+        top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+        top.rotation = new BABYLON.Vector3(0, Math.PI, Math.PI / 2);
+        this.placeParticles(
+          rIndex * 2.1 + 1.15,
+          -0.1 - gap,
+          cIndex * 2.1,
+          true
+        );
+        gap += 2.1;
+      }
+    }
+
+    if (cIndex == 0) {
+      let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+      top.position = new BABYLON.Vector3(
+        rIndex * 2.1,
+        -0.1,
+        cIndex * 2.1 - 1.15
+      );
+      top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+      top.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
+      gap = 2.1;
+      this.placeParticles(rIndex * 2.1, -0.1, cIndex * 2.1 - 1.15, true);
+
+      for (let i = 0; i < 5; i++) {
+        let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+        top.position = new BABYLON.Vector3(
+          rIndex * 2.1,
+          -0.1 - gap,
+          cIndex * 2.1 - 1.15
+        );
+        top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+        top.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
+        this.placeParticles(
+          rIndex * 2.1,
+          -0.1 - gap,
+          cIndex * 2.1 - 1.15,
+          true
+        );
+        gap += 2.1;
+      }
+    }
+
+    if (cIndex == this.glbDef.columns - 1) {
+      let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+      top.position = new BABYLON.Vector3(
+        rIndex * 2.1,
+        -0.1,
+        cIndex * 2.1 + 1.15
+      );
+      top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+      top.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
+      this.placeParticles(rIndex * 2.1, -0.1, cIndex * 2.1 + 1.15, true);
+      gap = 2.1;
+
+      for (let i = 0; i < 5; i++) {
+        let top = Atlas.topTiles.get("WaterTop.glb").createInstance("top");
+        top.position = new BABYLON.Vector3(
+          rIndex * 2.1,
+          -0.1 - gap,
+          cIndex * 2.1 + 1.15
+        );
+        top.scaling = new BABYLON.Vector3(1.2, 1, 1.2);
+        top.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
+        this.placeParticles(
+          rIndex * 2.1,
+          -0.1 - gap,
+          cIndex * 2.1 + 1.15,
+          true
+        );
+        gap += 2.1;
+      }
+    }
   }
 }

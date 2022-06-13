@@ -1,28 +1,13 @@
 import * as BABYLON from "@babylonjs/core";
 
 export const Atlas = {
-  topTiles: new Map<string, BABYLON.Mesh>(),        // top tile models
-  trees: new Map<string, BABYLON.Mesh>(),           // tree models
-  spaceRocks: new Map<string, BABYLON.Mesh>(),      // space rock models
-  // decorations: {
-  //   test: new Map<string, BABYLON.Mesh>(),
-    
-  // },     // all decorations
-  //spaceDecorations:new Map<string, BABYLON.Mesh>(), // all space decorations
-
-  // default theme decorations
-  grass: new Map<string, BABYLON.Mesh>(),
-  waterGrass: new Map<string, BABYLON.Mesh>(),
-  stones: new Map<string, BABYLON.Mesh>(),
-  flowers: new Map<string, BABYLON.Mesh>(),
-  stumps: new Map<string, BABYLON.Mesh>(),
-  branches: new Map<string, BABYLON.Mesh>(),
-
-  // space theme decorations
-  
-
-  mushrooms: new Map<string, BABYLON.Mesh>(),
-  tallGrass: new Map<string, BABYLON.Mesh>(), //BROKEN LOL
+  topTiles: new Map<string, BABYLON.Mesh>(), // top tile models
+  trees: new Map<string, BABYLON.Mesh>(), // tree models
+  spaceRocks: new Map<string, BABYLON.Mesh>(), // space rock models
+  grass: new Map<string, BABYLON.Mesh>(), // grass models
+  tallGrass: new Map<string, BABYLON.Mesh>(), // tall grass models
+  stones: new Map<string, BABYLON.Mesh>(), // stone models
+  mushrooms: new Map<string, BABYLON.Mesh>(), // mushroom models
 };
 
 let tiles: { [index: string]: string[] } = {
@@ -60,8 +45,6 @@ let tiles: { [index: string]: string[] } = {
     "SpaceRock7.glb",
     "SpaceRock8.glb",
   ],
-
-
   grass: [
     "GrassSet1.glb",
     "GrassSet2.glb",
@@ -77,12 +60,7 @@ let tiles: { [index: string]: string[] } = {
     "TallGrass5.glb",
   ],
   stones: ["Stones1.glb", "Stones2.glb"],
-  mushrooms: [
-    "Mushrooms1.glb",
-    "Mushrooms2.glb",
-    "Mushrooms3.glb",
-    "Mushrooms4.glb",
-  ],
+  mushrooms: ["Mushrooms1.glb"],
 };
 
 export function preloadMeshes(assetsManager: BABYLON.AssetsManager) {
