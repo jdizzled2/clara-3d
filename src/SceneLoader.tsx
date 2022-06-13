@@ -4,6 +4,7 @@ import { TimerState } from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
+import {movements} from './moves';
 import { Atlas, preloadMeshes } from "./MeshLoader";
 
 // board details object
@@ -55,7 +56,7 @@ export class SceneLoader {
   deathSpeed = [1600, 800, 400, 100];
   turnSpeed = [600, 300, 150, 50];
   framesSpeed = [30, 60, 120, 480];
-  moveWaitSpeed = [2200, 1100, 550, 200];
+  moveWaitSpeed = [2300, 1200, 650, 350];
   leafAnimationSpeed = [200, 800, 1800, 3200];
   currentDeathSpeed: number;
   currentTurnSpeed: number;
@@ -77,7 +78,7 @@ export class SceneLoader {
       globalThis.detailLevel = passedDL;
 
       // assign theme
-      //globalThis.theme = passedTheme;
+      globalThis.theme = passedTheme;
 
       // initalise leaves array
       this.leafs = [];
@@ -207,10 +208,22 @@ export class SceneLoader {
       speedPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
       speedPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
 
+       //panel for reading input from text file
+       var inputPanel = new GUI.StackPanel();
+       inputPanel.isVertical = false;
+       inputPanel.height = "100px";
+       inputPanel.width = "185px";
+       inputPanel.paddingRight = "10px"
+       inputPanel.paddingTop = "10px"
+       inputPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+       inputPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+ 
+
       // add stacks to gui
       claraGUI.addControl(cameraPanel);
       claraGUI.addControl(optionsPanel);
       claraGUI.addControl(speedPanel);
+      claraGUI.addControl(inputPanel);
 
       // creates text above detail options
       let detailHeading = new GUI.TextBlock();
@@ -574,6 +587,37 @@ export class SceneLoader {
         }
       });
 
+      var inputButton = GUI.Button.CreateSimpleButton("textInput", "textInput");
+      inputButton.width = 0.2;
+      inputButton.height = "40px";
+      inputButton.color = "white";
+      inputButton.background = "green";
+      inputButton.width = "150px";
+      inputButton.onPointerClickObservable.add(async ()=> {
+        console.log("textInput button has been pressed");
+
+        this.playerAnimator.start(true, 1, 60, 160);
+        let numbMove = movements.numberOfMoves;
+        const inputDelay = async (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms));
+        for(let i = 0; i<numbMove;i++ ){
+          var moveMade = movements.movesToBeMade[i];
+          if(moveMade == 1){
+            console.log("tried moving forward");
+            this.claraMoveForwardFunction(); 
+            await inputDelay(this.currentMoveWaitSpeed);
+  
+          }
+          if(moveMade == 2){
+            console.log("tried to turn right");
+            this.claraTurnRightFunction();
+            await inputDelay(this.currentTurnSpeed);
+          }
+        }
+        console.log("All Moves from file have been read and performed");
+
+      });
+
+      inputPanel.addControl(inputButton);
       // USED FOR MINIMAP, CURRENTLY WIP
       // scene.registerBeforeRender(function () {
       //   camera2.alpha = camera.alpha;
@@ -1408,11 +1452,7 @@ export class SceneLoader {
     for (let rIndex = 0; rIndex < this.glbDef.rows; rIndex++) {
       for (let cIndex = 0; cIndex < this.glbDef.columns; cIndex++) {
         if (this.treeArray[rIndex][cIndex] == 1) {
-          if (globalThis.theme == 0) {
-            this.getTreeOrRock(rIndex * 2.1, 1.8, cIndex * 2.1);
-          } else if (globalThis.theme == 1) {
-            this.getTreeOrRock(rIndex * 2.1, 1, cIndex * 2.1);
-          }
+          this.getTreeOrRock(rIndex * 2.1, 1.8, cIndex * 2.1);
         }
       }
     }
@@ -1430,6 +1470,7 @@ export class SceneLoader {
   getTreeOrRock(xcoord: number, ycoord: number, zcoord: number) {
     let item = "";
     let mesh;
+    let ycoordALT = ycoord;
     if (globalThis.theme == 0) {
       item = "Tree";
       if (globalThis.detailLevel == 1) {
@@ -1459,8 +1500,9 @@ export class SceneLoader {
         scale.scaleY,
         scale.scaleZ
       );
+      ycoordALT -= 0.8;
     }
-    mesh.position = new BABYLON.Vector3(xcoord, ycoord, zcoord);
+    mesh.position = new BABYLON.Vector3(xcoord, ycoordALT, zcoord);
     mesh.rotation = new BABYLON.Vector3(0, Math.random() * 180, 0);
   }
 
@@ -1944,7 +1986,7 @@ export class SceneLoader {
   }
 
   claraTurnRightFunction() {
-    if (!this.justMoved) {
+    if (!this.justMoved && this.alive) {
       this.justMoved = true;
       setTimeout(() => (this.justMoved = false), this.currentTurnSpeed);
 
