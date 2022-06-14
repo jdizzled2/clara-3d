@@ -1,23 +1,23 @@
 import * as BABYLON from "@babylonjs/core";
 
 export const Atlas = {
-  topTiles: new Map<string, BABYLON.Mesh>(),
-  trees: new Map<string, BABYLON.Mesh>(),
-  spaceRocks: new Map<string, BABYLON.Mesh>(), //NEWW !!!!!!!
-
-  NFOS: new Map<string, BABYLON.Mesh>(),
-
-  grass: new Map<string, BABYLON.Mesh>(),
-  tallGrass: new Map<string, BABYLON.Mesh>(),
-  stones: new Map<string, BABYLON.Mesh>(),
-  mushrooms: new Map<string, BABYLON.Mesh>(),
-  leaves: new Map<string, BABYLON.Mesh>(),
-  towers: new Map<string, BABYLON.Mesh>(),
-  // etc, lots
+  topTiles: new Map<string, BABYLON.Mesh>(), // top tile models
+  trees: new Map<string, BABYLON.Mesh>(), // tree models
+  spaceRocks: new Map<string, BABYLON.Mesh>(), // space rock models
+  grass: new Map<string, BABYLON.Mesh>(), // grass models
+  tallGrass: new Map<string, BABYLON.Mesh>(), // tall grass models
+  stones: new Map<string, BABYLON.Mesh>(), // stone models
+  mushrooms: new Map<string, BABYLON.Mesh>(), // mushroom models
 };
 
 let tiles: { [index: string]: string[] } = {
-  topTiles: ["GrassTop1.glb", "GrassTop2.glb", "WaterTop.glb"],
+  topTiles: [
+    "GrassTop1.glb",
+    "GrassTop2.glb",
+    "SpaceTop1.glb",
+    "SpaceTop2.glb",
+    "WaterTop.glb",
+  ],
   trees: [
     "Tree1.glb",
     "Tree2.glb",
@@ -35,15 +35,16 @@ let tiles: { [index: string]: string[] } = {
     "Tree14.glb",
     "Tree15.glb",
   ],
-
-  NFOS: [
-    "GrassSet1.glb",
-    "GrassSet2.glb",
-    "GrassSet3.glb",
-    "GrassSet4.glb",
-    "GrassSet5.glb",
+  spaceRocks: [
+    "SpaceRock1.glb",
+    "SpaceRock2.glb",
+    "SpaceRock3.glb",
+    "SpaceRock4.glb",
+    "SpaceRock5.glb",
+    "SpaceRock6.glb",
+    "SpaceRock7.glb",
+    "SpaceRock8.glb",
   ],
-
   grass: [
     "GrassSet1.glb",
     "GrassSet2.glb",
@@ -59,14 +60,7 @@ let tiles: { [index: string]: string[] } = {
     "TallGrass5.glb",
   ],
   stones: ["Stones1.glb", "Stones2.glb"],
-  mushrooms: [
-    "Mushrooms1.glb",
-    "Mushrooms2.glb",
-    "Mushrooms3.glb",
-    "Mushrooms4.glb",
-  ],
-  leaves: [],
-  towers: ["Tower1.glb", "Tower2.glb", "Tower3.glb"],
+  mushrooms: ["Mushrooms1.glb"],
 };
 
 export function preloadMeshes(assetsManager: BABYLON.AssetsManager) {

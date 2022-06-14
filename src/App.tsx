@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
 import Link from "next/link";
 import { useRouter } from "next/router";
-
 import { SceneLoader } from "./SceneLoader";
 
 // DOCUMENTATION
@@ -162,6 +160,7 @@ function Scene3D({ id }) {
       <h1 id="yo" className="box stack_top">
         YOU DIED
       </h1>
+      <h1 id="blerg" className="box stack_top"  >CHICKEN DINNER!!</h1>
     </>
   );
 }
