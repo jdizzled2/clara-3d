@@ -1,8 +1,7 @@
 // imports & includes
-import * as BABYLON from "@babylonjs/core";
-import { TimerState } from "@babylonjs/core";
-import * as GUI from "@babylonjs/gui";
-import "@babylonjs/loaders/glTF/2.0/glTFLoader";
+import * as BABYLON from '@babylonjs/core';
+import * as GUI from '@babylonjs/gui';
+import '@babylonjs/loaders/glTF/2.0/glTFLoader';
 
 import { movements } from "./moves";
 import { Atlas, preloadMeshes } from "./MeshLoader";
@@ -614,6 +613,8 @@ export class SceneLoader {
     engine.runRenderLoop(function () {
       scene.render();
     });
+
+    return engine;
   }
 
   // load scene function

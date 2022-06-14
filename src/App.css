@@ -41,15 +41,19 @@ button {
   font-size: calc(10px + 2vmin);
 }
 
-.box {
+
+
+.box{  
   position: absolute;
-  top: 50%;
+  top: 25%;
   left: 50%;
-  opacity: 0.8;
+  opacity: 0.8; 
   margin-left: auto;
+  margin-top: auto;
   display: none;
 }
-.stack_top {
+.stack_top{
   z-index: 9;
   margin: auto;
 }
+
