@@ -29,6 +29,7 @@ function App() {
       <h1 id="yo" className="box stack_top">
         YOU DIED
       </h1>
+      <h1 id="blerg" className="box stack_top"  >CHICKEN DINNER!!</h1>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 
 import { movements } from "./moves";
 import { Atlas, preloadMeshes } from "./MeshLoader";
-import { GLTF1 } from "@babylonjs/loaders";
 
 // board details object
 type SceneDefinition = {
@@ -48,6 +47,8 @@ export class SceneLoader {
   leavesCollected: number; // leaf count
   leafCount: number;
   alive = true; // alive check
+  maxXCoord: number; //final row
+  maxYCoord: number; //final column
 
   // speed settings and variables (CHANGED)
   // 0 = half speed
@@ -619,6 +620,8 @@ export class SceneLoader {
   loadScene(definition: SceneDefinition) {
     // assign rows n cols
     let { rows, columns } = definition;
+    this.maxXCoord = rows - 1;
+    this.maxYCoord = columns - 1;
 
     // assign global definition
     this.glbDef = definition;
@@ -810,6 +813,15 @@ export class SceneLoader {
               }
               case 7: {
                 // ghost
+                const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {});
+                sphere.position = new BABYLON.Vector3(
+                  rowIndex * 2.1,
+                  1.6,
+                  columnIndex * 2.1
+                );
+                var hl = new BABYLON.HighlightLayer("hl1", this.scene);
+
+                hl.addMesh(sphere, BABYLON.Color3.Blue());
                 this.movementGrid[rowIndex][columnIndex] = 7;
                 break;
               }
@@ -874,7 +886,10 @@ export class SceneLoader {
           );
         }
 
-        if (existingTile == null || (existingTile != null && existingTile.tid != 2)) {
+        if (
+          existingTile == null ||
+          (existingTile != null && existingTile.tid != 2)
+        ) {
           if (globalThis.detailLevel == 3) {
             if (globalThis.theme == 0) {
               this.chooseItem(rowIndex * 2.1, 1, columnIndex * 2.1);
@@ -893,7 +908,6 @@ export class SceneLoader {
             }
           }
         }
-
       }
     }
 
@@ -1326,6 +1340,11 @@ export class SceneLoader {
     switch (this.directionFacing) {
       //checking 1/2 is checking for water or trees
       case 0: {
+        if (this.claraXCoord == 0) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
         if (
           this.movementGrid[this.claraXCoord - 1][this.claraYCoord] == 1 ||
           this.movementGrid[this.claraXCoord - 1][this.claraYCoord] == 2
@@ -1341,6 +1360,10 @@ export class SceneLoader {
           this.leavesCollected += 1;
           this.claraXCoord -= 1;
           this.newLeafAnimation(-1, 0);
+          if (this.leavesCollected == this.leafCount) {
+            this.playerWon();
+            this.alive = false;
+          }
           //this.castRayLeaf();
           return true;
         }
@@ -1357,6 +1380,11 @@ export class SceneLoader {
             return false;
           }
         }
+        if (this.movementGrid[this.claraXCoord - 1][this.claraYCoord] == 7) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
         this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
         this.movementGrid[this.claraXCoord - 1][this.claraYCoord] = 4;
         this.claraXCoord -= 1;
@@ -1365,7 +1393,8 @@ export class SceneLoader {
       case 1: {
         if (
           this.movementGrid[this.claraXCoord][this.claraYCoord + 1] == 1 ||
-          this.movementGrid[this.claraXCoord][this.claraYCoord + 1] == 2
+          this.movementGrid[this.claraXCoord][this.claraYCoord + 1] == 2 ||
+          this.claraYCoord == this.maxYCoord
         ) {
           this.playClaraDeathAnimation();
           this.alive = false;
@@ -1378,6 +1407,10 @@ export class SceneLoader {
           this.leavesCollected += 1;
           this.claraYCoord += 1;
           this.newLeafAnimation(0, 1);
+          if (this.leavesCollected == this.leafCount) {
+            this.playerWon();
+            this.alive = false;
+          }
           //this.castRayLeaf();
           return true;
         }
@@ -1394,12 +1427,22 @@ export class SceneLoader {
             return false;
           }
         }
+        if (this.movementGrid[this.claraXCoord][this.claraYCoord + 1] == 7) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
         this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
         this.movementGrid[this.claraXCoord][this.claraYCoord + 1] = 4;
         this.claraYCoord += 1;
         return true;
       }
       case 2: {
+        if (this.claraXCoord == this.maxXCoord) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
         if (
           this.movementGrid[this.claraXCoord + 1][this.claraYCoord] == 1 ||
           this.movementGrid[this.claraXCoord + 1][this.claraYCoord] == 2
@@ -1416,6 +1459,10 @@ export class SceneLoader {
           this.leavesCollected += 1;
           this.claraXCoord += 1;
           this.newLeafAnimation(1, 0);
+          if (this.leavesCollected == this.leafCount) {
+            this.playerWon();
+            this.alive = false;
+          }
           return true;
         }
         //check 6 is for mushroom
@@ -1431,6 +1478,11 @@ export class SceneLoader {
             return false;
           }
         }
+        if (this.movementGrid[this.claraXCoord + 1][this.claraYCoord] == 7) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
         this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
         this.movementGrid[this.claraXCoord + 1][this.claraYCoord] = 4;
         this.claraXCoord += 1;
@@ -1439,7 +1491,8 @@ export class SceneLoader {
       case 3: {
         if (
           this.movementGrid[this.claraXCoord][this.claraYCoord - 1] == 1 ||
-          this.movementGrid[this.claraXCoord][this.claraYCoord - 1] == 2
+          this.movementGrid[this.claraXCoord][this.claraYCoord - 1] == 2 ||
+          this.claraYCoord == 0
         ) {
           this.playClaraDeathAnimation();
           this.alive = false;
@@ -1453,6 +1506,10 @@ export class SceneLoader {
           this.leavesCollected += 1;
           this.claraYCoord -= 1;
           this.newLeafAnimation(0, -1);
+          if (this.leavesCollected == this.leafCount) {
+            this.playerWon();
+            this.alive = false;
+          }
           return true;
         }
         //check 6 is for mushroom
@@ -1468,6 +1525,11 @@ export class SceneLoader {
             return false;
           }
         }
+        if (this.movementGrid[this.claraXCoord][this.claraYCoord - 1] == 7) {
+          this.playClaraDeathAnimation();
+          this.alive = false;
+          return false;
+        }
         this.movementGrid[this.claraXCoord][this.claraYCoord] = 0;
         this.movementGrid[this.claraXCoord][this.claraYCoord - 1] = 4;
         this.claraYCoord -= 1;
@@ -1482,6 +1544,9 @@ export class SceneLoader {
   checkMushroomMove() {
     switch (this.directionFacing) {
       case 0: {
+        if (this.claraXCoord - 1 == 0) {
+          return false;
+        }
         //check if ahead of mushroom is a tree or water
         if (
           this.movementGrid[this.claraXCoord - 2][this.claraYCoord] == 1 ||
@@ -1500,6 +1565,9 @@ export class SceneLoader {
         return true;
       }
       case 1: {
+        if (this.claraYCoord + 1 == this.maxYCoord) {
+          return false;
+        }
         if (
           this.movementGrid[this.claraXCoord][this.claraYCoord + 2] == 1 ||
           this.movementGrid[this.claraXCoord][this.claraYCoord + 2] == 2 ||
@@ -1516,6 +1584,9 @@ export class SceneLoader {
         return true;
       }
       case 2: {
+        if (this.claraXCoord + 1 == this.maxXCoord) {
+          return false;
+        }
         if (
           this.movementGrid[this.claraXCoord + 2][this.claraYCoord] == 1 ||
           this.movementGrid[this.claraXCoord + 2][this.claraYCoord] == 2 ||
@@ -1532,6 +1603,9 @@ export class SceneLoader {
         return true;
       }
       case 3: {
+        if (this.claraYCoord - 1 == 0) {
+          return false;
+        }
         if (
           this.movementGrid[this.claraXCoord][this.claraYCoord - 2] == 1 ||
           this.movementGrid[this.claraXCoord][this.claraYCoord - 2] == 2 ||
@@ -1994,6 +2068,11 @@ export class SceneLoader {
   playerDied() {
     document.getElementById("yo").style.display = "block";
     document.getElementById("yo").style.color = "red";
+  }
+
+  playerWon() {
+    document.getElementById("blerg").style.display = "block";
+    document.getElementById("blerg").style.color = "green";
   }
 
   placeParticles(x: number, y: number, z: number, waterfall: boolean) {

@@ -23,13 +23,13 @@ export const scene = {
         {
             "r": 2,
             "c": 1,
-            "tid": 1,
+            "tid": 7,
             "d": 0
         },
         {
             "r": 2,
             "c": 2,
-            "tid": 1,
+            "tid": 6,
             "d": 0
         }
     ],
