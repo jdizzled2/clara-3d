@@ -15,3 +15,4 @@
 - Tomi Trescak <tomi.trescak@gmail.com>
 - Hasan Karabork <19679091@student.westernsydney.edu.au>
 - Djed Curtis <djedcurtis@protonmail.com>
+- Jarrod Baker <20487821@student.westernsydney.edu.au>
